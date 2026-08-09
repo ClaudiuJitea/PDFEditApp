@@ -29,7 +29,8 @@ linux:
   target:
     - AppImage
     - deb
-  icon: build/icon.png
+  executableName: pdfedit
+  icon: build/icons
   category: Office
   maintainer: PDFEdit Contributors <pdfedit@example.com>
   syncDesktopName: true

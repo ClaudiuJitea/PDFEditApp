@@ -185,13 +185,18 @@ Artifacts are written to `dist/desktop/` (AppImage and `.deb` on Linux).
 
 ## App Icon
 
-Generate the default branded icon:
+The packaged AppImage / installer icon matches the in-app toolbar brand mark (document + pencil).
+Source: [`assets/icons/icon.png`](assets/icons/icon.png). The desktop build copies size variants into `build/icons/` for electron-builder.
 
 ```bash
+# Refresh derived icons from assets/icons/icon.png
 npm run build:icon
+
+# Regenerate assets/icons/icon.png from the in-app brand mark
+python3 build/generate-icon.py --brand
 ```
 
-Use your own square PNG (ideally 1024×1024):
+Use a different square PNG (ideally 1024×1024):
 
 ```bash
 bash build/prepare-icon.sh /path/to/your-icon.png

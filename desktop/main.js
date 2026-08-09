@@ -2,16 +2,30 @@ const { app, BrowserWindow, dialog, ipcMain, Menu, shell } = require('electron')
 const path = require('path');
 const fs = require('fs');
 const { SidecarManager } = require('./sidecar');
+const { installLinuxDesktopIntegration } = require('./linux-desktop');
 
 if (process.platform === 'linux') {
   // Avoid chrome-sandbox setuid requirement on common Linux dev installs.
   app.commandLine.appendSwitch('no-sandbox');
+  // Align X11 WM_CLASS with StartupWMClass=pdfedit / Wayland app_id.
+  app.commandLine.appendSwitch('class', 'pdfedit');
 }
 
 const isDev = !app.isPackaged;
 let mainWindow = null;
 let sidecar = null;
 let authToken = '';
+
+// Keep Linux WM_CLASS / Wayland app_id aligned with package.json desktopName
+// and the generated .desktop StartupWMClass (pdfedit).
+app.setName('PDFEdit');
+if (process.platform === 'linux') {
+  try {
+    app.setDesktopName('pdfedit.desktop');
+  } catch (_) {
+    /* older Electron */
+  }
+}
 
 const gotLock = app.requestSingleInstanceLock();
 if (!gotLock) {
@@ -24,10 +38,16 @@ function getUserDataDir() {
 
 function getAppIconPath() {
   const candidates = [
+    // Bundled next to main.js inside the asar / app directory
+    path.join(__dirname, 'icon.png'),
+    // Packaged resources fallback
+    path.join(process.resourcesPath || '', 'icons', 'icon.png'),
+    path.join(process.resourcesPath || '', 'icon.png'),
+    // Dev tree
     path.join(__dirname, '..', 'build', 'icon.png'),
     path.join(__dirname, '..', 'assets', 'icons', 'icon.png'),
   ];
-  return candidates.find((candidate) => fs.existsSync(candidate)) || null;
+  return candidates.find((candidate) => candidate && fs.existsSync(candidate)) || null;
 }
 
 function getPreloadPath() {
@@ -51,6 +71,14 @@ function createWindow(serverUrl) {
       sandbox: true,
     },
   });
+
+  if (iconPath && process.platform === 'linux') {
+    try {
+      mainWindow.setIcon(iconPath);
+    } catch (_) {
+      /* ignore */
+    }
+  }
 
   mainWindow.once('ready-to-show', () => mainWindow.show());
   mainWindow.loadURL(serverUrl);
@@ -77,6 +105,14 @@ function hideApplicationMenu() {
 }
 
 async function startApp() {
+  if (!isDev && process.platform === 'linux') {
+    try {
+      installLinuxDesktopIntegration({ iconPath: getAppIconPath() });
+    } catch (err) {
+      console.error('Linux desktop integration failed:', err);
+    }
+  }
+
   sidecar = new SidecarManager({
     isDev,
     userDataDir: getUserDataDir(),

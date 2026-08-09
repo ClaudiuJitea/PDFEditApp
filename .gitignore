@@ -14,3 +14,5 @@ Thumbs.db
 pytest-cache-files-*/
 build/pyinstaller-work/
 build/native-tools/
+squashfs-root/
+/icon.png
