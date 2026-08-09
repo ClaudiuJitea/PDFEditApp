@@ -525,6 +525,48 @@ def _sample_page_background(img, width, height):
     return samples[len(samples) // 2]
 
 
+def _quantize_rgb(color, step=8):
+    return tuple(min(255, (channel // step) * step) for channel in color[:3])
+
+
+def _sample_rect_background_rgb(page, rect, dpi_scale=3.0):
+    """Estimate the local background color inside a PDF rect (RGB 0-255)."""
+    if rect.is_empty:
+        return (255, 255, 255)
+
+    clip = fitz.Rect(rect)
+    clip.normalize()
+    if clip.is_empty:
+        return (255, 255, 255)
+
+    try:
+        pix = page.get_pixmap(matrix=fitz.Matrix(dpi_scale, dpi_scale), clip=clip, alpha=False)
+    except Exception:
+        return (255, 255, 255)
+
+    if pix.width < 1 or pix.height < 1:
+        return (255, 255, 255)
+
+    img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+    counts = {}
+    for pixel in img.getdata():
+        key = _quantize_rgb(pixel)
+        counts[key] = counts.get(key, 0) + 1
+
+    if not counts:
+        return (255, 255, 255)
+
+    return max(counts.items(), key=lambda item: item[1])[0]
+
+
+def _rgb255_to_pdf_fill(color):
+    return (color[0] / 255.0, color[1] / 255.0, color[2] / 255.0)
+
+
+def _pdf_fill_for_rect(page, rect):
+    return _rgb255_to_pdf_fill(_sample_rect_background_rgb(page, rect))
+
+
 def _cover_with_color(draw, page, bbox, dpi_scale, color, pad=4):
     view_bbox = page_rect_to_view(page, bbox)
     x0 = int(view_bbox[0] * dpi_scale)
@@ -1521,7 +1563,8 @@ def render_page_to_png(page, dpi_scale=2, hide_text=False, hide_editable=False, 
                     bbox = elem.get("pdf_bbox")
                     if not bbox or len(bbox) != 4:
                         continue
-                    _cover_with_color(draw, page, bbox, dpi_scale, bg_color)
+                    local_bg = _sample_rect_background_rgb(page, fitz.Rect(bbox))
+                    _cover_with_color(draw, page, bbox, dpi_scale, local_bg)
             except Exception:
                 pass
 
@@ -3271,7 +3314,7 @@ def save_page(session_id, page_num):
 
     for area in areas_to_redact:
         if not area.is_empty:
-            page.add_redact_annot(area, fill=(1, 1, 1))
+            page.add_redact_annot(area, fill=_pdf_fill_for_rect(page, area))
 
     if areas_to_redact:
         try:
@@ -3676,11 +3719,6 @@ def save_page(session_id, page_num):
             shape_obj = page.new_shape()
             shape_obj.draw_rect(draw_rect)
             shape_obj.finish(color=None, fill=bg_color)
-            shape_obj.commit()
-        else:
-            shape_obj = page.new_shape()
-            shape_obj.draw_rect(draw_rect)
-            shape_obj.finish(color=None, fill=(1, 1, 1))
             shape_obj.commit()
 
         min_height = font_size * 2.5
