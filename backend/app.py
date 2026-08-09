@@ -567,6 +567,14 @@ def _pdf_fill_for_rect(page, rect):
     return _rgb255_to_pdf_fill(_sample_rect_background_rgb(page, rect))
 
 
+def _page_background_pdf_fill(page, dpi_scale=2.0):
+    """Match web editor masking: sample page corners for a consistent fill color."""
+    mat = fitz.Matrix(dpi_scale, dpi_scale)
+    pix = page.get_pixmap(matrix=mat, alpha=False, annots=False)
+    img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+    return _rgb255_to_pdf_fill(_sample_page_background(img, pix.width, pix.height))
+
+
 def _cover_with_color(draw, page, bbox, dpi_scale, color, pad=4):
     view_bbox = page_rect_to_view(page, bbox)
     x0 = int(view_bbox[0] * dpi_scale)
@@ -1563,8 +1571,7 @@ def render_page_to_png(page, dpi_scale=2, hide_text=False, hide_editable=False, 
                     bbox = elem.get("pdf_bbox")
                     if not bbox or len(bbox) != 4:
                         continue
-                    local_bg = _sample_rect_background_rgb(page, fitz.Rect(bbox))
-                    _cover_with_color(draw, page, bbox, dpi_scale, local_bg)
+                    _cover_with_color(draw, page, bbox, dpi_scale, bg_color)
             except Exception:
                 pass
 
@@ -3312,9 +3319,11 @@ def save_page(session_id, page_num):
 
         new_elements.append(elem)
 
+    page_fill = _page_background_pdf_fill(page)
+
     for area in areas_to_redact:
         if not area.is_empty:
-            page.add_redact_annot(area, fill=_pdf_fill_for_rect(page, area))
+            page.add_redact_annot(area, fill=page_fill)
 
     if areas_to_redact:
         try:

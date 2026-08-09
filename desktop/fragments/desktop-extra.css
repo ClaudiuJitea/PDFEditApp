@@ -1,0 +1,92 @@
+.modal-about .about-dialog {
+    width: min(100%, 380px);
+    padding: 28px 24px 22px;
+    text-align: center;
+    overflow: hidden;
+}
+
+.about-dialog-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+}
+
+.about-dialog-hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+}
+
+.about-dialog-mark {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 72px;
+    height: 72px;
+    border-radius: 18px;
+    color: var(--color-primary);
+    background: linear-gradient(180deg, color-mix(in srgb, var(--color-primary) 10%, var(--color-surface)) 0%, var(--color-surface-2) 100%);
+    border: 1px solid color-mix(in srgb, var(--color-primary) 18%, var(--color-border));
+    box-shadow: var(--shadow-sm);
+}
+
+.about-dialog-title {
+    margin: 0;
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--color-text);
+}
+
+.about-dialog-version {
+    display: inline-flex;
+    align-items: center;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--color-primary);
+    background: color-mix(in srgb, var(--color-primary) 10%, var(--color-surface));
+    border: 1px solid color-mix(in srgb, var(--color-primary) 16%, var(--color-border));
+}
+
+.about-dialog-tagline {
+    margin: 0 0 18px;
+    font-size: 0.92rem;
+    line-height: 1.55;
+    color: var(--color-text-muted);
+}
+
+.about-dialog-footnote {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: var(--radius-md);
+    background: var(--color-surface-offset);
+    border: 1px solid var(--color-border);
+    text-align: left;
+}
+
+.about-dialog-footnote-icon {
+    width: 15px;
+    height: 15px;
+    margin-top: 2px;
+    flex-shrink: 0;
+    color: var(--color-text-faint);
+}
+
+.about-dialog-path {
+    font-size: 0.78rem;
+    line-height: 1.45;
+    word-break: break-all;
+    color: var(--color-text-muted);
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+.modal-quit .modal-title {
+    margin-bottom: 12px;
+}

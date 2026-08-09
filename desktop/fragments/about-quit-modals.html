@@ -1,0 +1,45 @@
+        <div id="about-modal" class="modal modal-about" style="display:none" role="dialog" aria-labelledby="about-title" aria-modal="true">
+            <div class="modal-backdrop"></div>
+            <div class="modal-content about-dialog">
+                <button id="btn-about-close" class="about-dialog-close icon-btn-sm" type="button" title="Close" aria-label="Close">
+                    <i data-lucide="x" class="btn-icon-sm"></i>
+                </button>
+
+                <div class="about-dialog-hero">
+                    <div class="about-dialog-mark" aria-hidden="true">
+                        <svg width="40" height="40" viewBox="0 0 36 36" fill="none">
+                            <rect x="1.5" y="1.5" width="33" height="33" rx="8" fill="var(--color-surface)" stroke="currentColor" stroke-width="1.5"/>
+                            <path d="M11 8.5H19L24 13.5V26.5C24 27.3284 23.3284 28 22.5 28H11C10.1716 28 9.5 27.3284 9.5 26.5V10C9.5 9.17157 10.1716 8.5 11 8.5Z" fill="var(--color-surface-2)" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                            <path d="M19 8.5V13.5H24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M14 22.6L21.8 14.8C22.3862 14.2138 23.3369 14.2138 23.9231 14.8C24.5093 15.3862 24.5093 16.3369 23.9231 16.9231L16.1 24.7L12.8 25.4L13.5 22.1Z" fill="var(--color-surface)" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                            <path d="M19.9 16.7L22 18.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <h2 id="about-title" class="about-dialog-title">PDFEdit</h2>
+                    <span id="about-version" class="about-dialog-version">Version 1.0.0</span>
+                </div>
+
+                <p class="about-dialog-tagline">
+                    View, annotate, fill forms, redact, sign, and export PDF documents.
+                </p>
+
+                <div class="about-dialog-footnote">
+                    <i data-lucide="folder" class="about-dialog-footnote-icon" aria-hidden="true"></i>
+                    <span id="about-data-dir" class="about-dialog-path">—</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="quit-modal" class="modal modal-quit" style="display:none">
+            <div class="modal-backdrop"></div>
+            <div class="modal-content">
+                <h2 class="modal-title">Quit PDFEdit?</h2>
+                <p id="quit-modal-message" class="form-summary-selected">
+                    Any unsaved document changes will be lost.
+                </p>
+                <div class="modal-actions">
+                    <button id="btn-quit-cancel" class="modal-btn cancel" type="button">Cancel</button>
+                    <button id="btn-quit-confirm" class="modal-btn discard" type="button">Quit</button>
+                </div>
+            </div>
+        </div>
