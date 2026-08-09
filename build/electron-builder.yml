@@ -1,0 +1,38 @@
+appId: com.pdfedit.desktop
+productName: PDFEdit
+directories:
+  output: dist/desktop
+  buildResources: assets
+files:
+  - desktop/**/*
+  - package.json
+  - version.json
+extraResources:
+  - from: dist/sidecar/pdfedit-sidecar
+    to: sidecar
+    filter:
+      - "**/*"
+  - from: build/native-tools
+    to: native-tools
+    filter:
+      - "**/*"
+win:
+  target:
+    - nsis
+  icon: build/icon.png
+mac:
+  target:
+    - dmg
+  icon: build/icon.png
+  category: public.app-category.productivity
+linux:
+  target:
+    - AppImage
+    - deb
+  icon: build/icon.png
+  category: Office
+  maintainer: PDFEdit Contributors <pdfedit@example.com>
+  syncDesktopName: true
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true

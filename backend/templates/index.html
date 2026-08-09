@@ -1,0 +1,2092 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PDFEdit — PDF Editor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/fonts/fonts.css') }}?v=1.0.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=1.0.12">
+    <script src="{{ url_for('static', filename='vendor/fabric/fabric.min.js') }}?v=5.3.1"></script>
+    <script src="{{ url_for('static', filename='vendor/lucide/lucide.min.js') }}?v=0.468.0"></script>
+    <style>
+    .sig-canvas-controls .btn-sm {
+        width: auto;
+        padding: 5px 14px;
+        font-size: 12px;
+        border-radius: var(--radius-sm);
+    }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- Top Bar -->
+        <header class="top-bar">
+            <div class="top-bar-left">
+                <div class="brand">
+                    <svg class="brand-icon" width="28" height="28" viewBox="0 0 36 36" fill="none" aria-hidden="true">
+                        <rect x="1.5" y="1.5" width="33" height="33" rx="8" fill="var(--color-surface)" stroke="var(--color-primary)" stroke-width="1.5"/>
+                        <path d="M11 8.5H19L24 13.5V26.5C24 27.3284 23.3284 28 22.5 28H11C10.1716 28 9.5 27.3284 9.5 26.5V10C9.5 9.17157 10.1716 8.5 11 8.5Z" fill="var(--color-surface-2)" stroke="var(--color-primary)" stroke-width="1.5" stroke-linejoin="round"/>
+                        <path d="M19 8.5V13.5H24" stroke="var(--color-primary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M14 22.6L21.8 14.8C22.3862 14.2138 23.3369 14.2138 23.9231 14.8C24.5093 15.3862 24.5093 16.3369 23.9231 16.9231L16.1 24.7L12.8 25.4L13.5 22.1Z" fill="var(--color-surface)" stroke="var(--color-primary)" stroke-width="1.5" stroke-linejoin="round"/>
+                        <path d="M19.9 16.7L22 18.8" stroke="var(--color-primary)" stroke-width="1.5" stroke-linecap="round"/>
+                    </svg>
+                    <span class="brand-text">PDFEdit</span>
+                </div>
+                <div class="top-bar-actions">
+                    <button id="btn-upload" class="top-btn" title="Open PDF (Ctrl+O)">
+                        <i data-lucide="upload" class="btn-icon"></i>
+                        <span>Open</span>
+                    </button>
+                    <button id="btn-new" class="top-btn" title="New blank PDF">
+                        <i data-lucide="file-plus" class="btn-icon"></i>
+                        <span>New</span>
+                    </button>
+                    <span class="top-bar-sep"></span>
+                    <button id="btn-save" class="top-btn top-btn-accent save-btn" title="Save (Ctrl+S)" disabled aria-label="Save">
+                        <i data-lucide="save" class="btn-icon"></i>
+                        <span class="save-btn-label">Save</span>
+                    </button>
+                    <button id="btn-download" class="top-btn top-btn-accent" title="Download PDF" disabled>
+                        <i data-lucide="download" class="btn-icon"></i>
+                        <span>Download</span>
+                    </button>
+                    <button id="btn-merge" class="top-btn" title="Merge another PDF" disabled>
+                        <i data-lucide="files" class="btn-icon"></i>
+                        <span>Merge</span>
+                    </button>
+                    <button id="btn-document" class="top-btn" title="Document metadata & bookmarks" disabled>
+                        <i data-lucide="book-open" class="btn-icon"></i>
+                        <span>Document</span>
+                    </button>
+                    <button id="btn-close" class="top-btn top-btn-danger" title="Close document (Ctrl+W)" disabled>
+                        <i data-lucide="file-x" class="btn-icon"></i>
+                        <span>Close</span>
+                    </button>
+                    <span class="top-bar-sep"></span>
+                    <button id="btn-undo" class="top-btn icon-only" title="Undo (Ctrl+Z)" disabled>
+                        <i data-lucide="undo-2" class="btn-icon"></i>
+                    </button>
+                    <button id="btn-redo" class="top-btn icon-only" title="Redo (Ctrl+Y)" disabled>
+                        <i data-lucide="redo-2" class="btn-icon"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="top-bar-right">
+                <span id="page-count-badge" class="page-count" style="display:none">
+                    <span id="page-count-text">0 pages</span>
+                </span>
+                <button id="btn-ai-assistant" class="top-btn" title="AI Assistant" disabled>
+                    <i data-lucide="sparkles" class="btn-icon"></i>
+                    <span>AI</span>
+                </button>
+                <button id="btn-ai-settings" class="top-btn icon-only" title="AI Settings (OpenRouter)">
+                    <i data-lucide="settings" class="btn-icon"></i>
+                </button>
+                <button id="btn-theme" class="top-btn icon-only" title="Toggle theme">
+                    <i data-lucide="sun" class="btn-icon theme-icon-light"></i>
+                    <i data-lucide="moon" class="btn-icon theme-icon-dark"></i>
+                </button>
+                <span class="top-bar-sep"></span>
+                <button id="btn-about" class="top-btn icon-only" title="About PDFEdit">
+                    <i data-lucide="info" class="btn-icon"></i>
+                </button>
+                <button id="btn-quit" class="top-btn top-btn-danger" title="Quit PDFEdit">
+                    <i data-lucide="log-out" class="btn-icon"></i>
+                    <span>Quit</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <div class="main-layout">
+            <!-- Left Toolbar -->
+            <aside id="toolbar" class="toolbar">
+                <div class="toolbar-tools">
+                    <button class="tool-btn active" data-tool="select" data-shortcut="V" title="Select / Move (V)">
+                        <i data-lucide="mouse-pointer-2"></i>
+                    </button>
+                    <button class="tool-btn" data-tool="forms" data-shortcut="O" title="Forms (O)">
+                        <i data-lucide="list-checks"></i>
+                    </button>
+                    <button class="tool-btn" data-tool="text" data-shortcut="T" title="Add Text (T)">
+                        <i data-lucide="type"></i>
+                    </button>
+                    <button class="tool-btn" data-tool="image" data-shortcut="I" title="Add Image (I)">
+                        <i data-lucide="image-plus"></i>
+                    </button>
+                    <button class="tool-btn" data-tool="table" data-shortcut="G" title="Insert Table (G)">
+                        <i data-lucide="table"></i>
+                    </button>
+                    <!-- Shapes Toolbox -->
+                    <div class="tool-dropdown-container" id="shape-tool-container">
+                        <button class="tool-btn" data-tool="rect" data-shortcut="U" title="Shapes Tool (U)" id="btn-shape-main">
+                            <i data-lucide="shapes" id="shape-tool-icon"></i>
+                            <span class="dropdown-mini-arrow">▾</span>
+                        </button>
+                        
+                        <div class="tool-dropdown-menu" id="shape-dropdown-menu" style="display:none">
+                            <button class="menu-item active" data-shape="rect" type="button" title="Rectangle (R)">
+                                <i data-lucide="square"></i>
+                                <span>Rectangle</span>
+                            </button>
+                            <button class="menu-item" data-shape="ellipse" type="button" title="Ellipse (E)">
+                                <i data-lucide="circle"></i>
+                                <span>Ellipse</span>
+                            </button>
+                            <button class="menu-item" data-shape="line" type="button" title="Line (L)">
+                                <i data-lucide="minus"></i>
+                                <span>Line</span>
+                            </button>
+                            <button class="menu-item" data-shape="arrow" type="button" title="Arrow">
+                                <i data-lucide="trending-up"></i>
+                                <span>Arrow</span>
+                            </button>
+                            <button class="menu-item" data-shape="star" type="button" title="Star">
+                                <i data-lucide="star"></i>
+                                <span>Star</span>
+                            </button>
+                        </div>
+                    </div>
+                    <button class="tool-btn" data-tool="freehand" data-shortcut="F" title="Freehand Draw (F)">
+                        <i data-lucide="pencil-line"></i>
+                    </button>
+                    <div class="toolbar-separator"></div>
+                    <button class="tool-btn" data-tool="highlight" data-shortcut="H" title="Highlight (H)">
+                        <i data-lucide="highlighter"></i>
+                    </button>
+                    <button class="tool-btn" data-tool="sticky" data-shortcut="N" title="Sticky Note (N)">
+                        <i data-lucide="sticky-note"></i>
+                    </button>
+                    <button class="tool-btn" data-tool="redaction" data-shortcut="X" title="Redaction / Blackout (X)">
+                        <i data-lucide="shield"></i>
+                    </button>
+                    <button class="tool-btn" data-tool="signature" data-shortcut="S" title="Signature (S)">
+                        <i data-lucide="pen-tool"></i>
+                    </button>
+                    <button class="tool-btn" data-tool="stamp" data-shortcut="P" title="Stamp (P)">
+                        <i data-lucide="badge-check"></i>
+                    </button>
+                    <button class="tool-btn" data-tool="link" data-shortcut="K" title="Add Link (K)">
+                        <i data-lucide="link"></i>
+                    </button>
+                    <div class="toolbar-separator"></div>
+                    <button class="tool-btn" data-tool="eraser" data-shortcut="Del" title="Delete Selected (Del)">
+                        <i data-lucide="eraser"></i>
+                    </button>
+                    <div class="toolbar-spacer"></div>
+                    <button class="tool-btn" id="btn-toggle-thumbs" data-shortcut="" title="Toggle page thumbnails">
+                        <i data-lucide="panel-left-open"></i>
+                    </button>
+                </div>
+            </aside>
+
+            <!-- Left Sidebar - Thumbnails (collapsible) -->
+            <aside id="thumbnails-panel" class="thumbnails-panel">
+                <div class="thumbnails-header">
+                    <span>Pages</span>
+                    <div class="thumbnails-header-actions">
+                        <button id="btn-add-page-header" class="icon-btn-sm" title="Add page after current page">
+                            <i data-lucide="plus" class="btn-icon-sm"></i>
+                        </button>
+                        <button id="btn-close-thumbs" class="icon-btn-sm" title="Close pages panel">
+                            <i data-lucide="panel-left-close" class="btn-icon-sm"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="thumbnails-list" class="thumbnails-list"></div>
+                <button id="btn-add-page" class="add-page-btn" title="Add new page">
+                    <i data-lucide="plus" class="btn-icon-sm"></i>
+                    <span>Add Blank Page</span>
+                </button>
+            </aside>
+
+            <!-- Center Canvas Area -->
+            <main class="canvas-area">
+                <!-- Upload Zone (initial state) -->
+                <div id="upload-zone" class="upload-zone">
+                    <div class="upload-zone-inner">
+                        <div class="upload-icon-wrapper">
+                            <svg class="upload-pdf-icon" width="64" height="64" viewBox="0 0 64 64" fill="none">
+                                <rect x="12" y="4" width="40" height="56" rx="4" stroke="var(--color-primary)" stroke-width="2" fill="var(--color-surface)"/>
+                                <path d="M36 4L52 20" stroke="var(--color-primary)" stroke-width="2" fill="none"/>
+                                <path d="M36 4V20H52" stroke="var(--color-primary)" stroke-width="2" fill="var(--color-surface-2)"/>
+                                <text x="32" y="42" text-anchor="middle" font-family="Inter, sans-serif" font-size="10" font-weight="700" fill="var(--color-primary)">PDF</text>
+                            </svg>
+                        </div>
+                        <h2 class="upload-title">Drop a PDF here or click to upload</h2>
+                        <p class="upload-subtitle">Supports PDF files up to 50MB</p>
+                        <button id="btn-upload-zone" class="upload-btn">
+                            <i data-lucide="upload" class="btn-icon"></i>
+                            Choose PDF File
+                        </button>
+                        <button id="btn-new-zone" class="upload-btn secondary">
+                            <i data-lucide="file-plus" class="btn-icon"></i>
+                            Create Blank PDF
+                        </button>
+                        <input type="file" id="file-input" accept=".pdf,application/pdf" hidden>
+                    </div>
+                </div>
+
+                <!-- Editor Canvas (hidden initially) -->
+                <div id="editor-container" class="editor-container" style="display:none">
+                    <div id="canvas-wrapper" class="canvas-wrapper">
+                        <div id="canvas-loading" class="canvas-loading">
+                            <div class="skeleton-shimmer"></div>
+                        </div>
+                        <div id="ai-ocr-busy" class="ai-ocr-busy" style="display:none" aria-hidden="true">
+                            <div class="ai-ocr-busy-card">
+                                <div class="ai-ocr-busy-visual">
+                                    <div class="ai-ocr-doc">
+                                        <div class="ai-ocr-doc-line"></div>
+                                        <div class="ai-ocr-doc-line"></div>
+                                        <div class="ai-ocr-doc-line"></div>
+                                        <div class="ai-ocr-doc-line"></div>
+                                        <div class="ai-ocr-doc-line"></div>
+                                        <div class="ai-ocr-scanline"></div>
+                                    </div>
+                                    <div class="ai-ocr-ring"></div>
+                                </div>
+                                <div class="ai-ocr-busy-title">AI OCR in progress</div>
+                                <div class="ai-ocr-busy-subtitle" id="ai-ocr-busy-status">Reading page content…</div>
+                                <div class="ai-ocr-busy-bar"><span></span></div>
+                            </div>
+                        </div>
+                        <div id="canvas-error" class="canvas-error" style="display:none">
+                            <i data-lucide="alert-circle" class="error-icon"></i>
+                            <p>Failed to load page</p>
+                            <button id="btn-retry" class="retry-btn">Retry</button>
+                        </div>
+                        <div id="form-layer" class="form-layer"></div>
+                        <div id="sticky-note-popup" class="sticky-popup" style="display:none">
+                            <div class="sticky-popup-header">
+                                <span class="sticky-popup-title">Sticky Note</span>
+                                <i data-lucide="pin" class="sticky-popup-pin-icon" style="display:none"></i>
+                                <button id="sticky-popup-close" class="sticky-popup-close" type="button" title="Close note">&times;</button>
+                            </div>
+                            <div class="sticky-popup-body">
+                                <textarea id="sticky-popup-textarea" class="sticky-popup-textarea" placeholder="Type your note..." rows="5"></textarea>
+                            </div>
+                        </div>
+                        <canvas id="fabric-canvas"></canvas>
+                        <div id="drop-overlay" class="drop-overlay" style="display:none">
+                            <div class="drop-overlay-inner">
+                                <i data-lucide="upload" class="drop-overlay-icon"></i>
+                                <h2>Drop PDF to open</h2>
+                                <p>Or click <strong>Open</strong> in the top bar</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Page Navigation Bar -->
+                    <div class="page-nav">
+                        <div class="find-bar">
+                            <i data-lucide="search" class="find-bar-icon"></i>
+                            <input type="text" id="find-input" class="find-input" placeholder="Find in document..." disabled>
+                            <button id="btn-find-prev" class="nav-btn icon-only" type="button" title="Previous match" disabled>
+                                <i data-lucide="chevron-up" class="btn-icon-sm"></i>
+                            </button>
+                            <button id="btn-find-next" class="nav-btn icon-only" type="button" title="Next match" disabled>
+                                <i data-lucide="chevron-down" class="btn-icon-sm"></i>
+                            </button>
+                            <span id="find-status" class="find-status"></span>
+                        </div>
+                        <div class="nav-divider"></div>
+                        <button id="btn-prev-page" class="nav-btn" title="Previous page" disabled>
+                            <i data-lucide="chevron-left" class="btn-icon-sm"></i>
+                        </button>
+                        <div class="page-info">
+                            <span>Page</span>
+                            <input type="number" id="page-input" class="page-input" min="1" value="1">
+                            <span>of <span id="total-pages">1</span></span>
+                        </div>
+                        <button id="btn-next-page" class="nav-btn" title="Next page" disabled>
+                            <i data-lucide="chevron-right" class="btn-icon-sm"></i>
+                        </button>
+                        <div class="nav-divider"></div>
+                        <button id="btn-zoom-out" class="nav-btn" title="Zoom out (-)">
+                            <i data-lucide="zoom-out" class="btn-icon-sm"></i>
+                        </button>
+                        <span id="zoom-level" class="zoom-level">100%</span>
+                        <button id="btn-zoom-in" class="nav-btn" title="Zoom in (+)">
+                            <i data-lucide="zoom-in" class="btn-icon-sm"></i>
+                        </button>
+                        <button id="btn-zoom-fit" class="nav-btn" title="Fit to view">
+                            <i data-lucide="maximize-2" class="btn-icon-sm"></i>
+                        </button>
+                        <button id="btn-zoom-100" class="nav-btn" title="100%">
+                            1:1
+                        </button>
+                    </div>
+                </div>
+            </main>
+
+            <!-- Right Properties Panel -->
+            <aside id="properties-panel" class="properties-panel">
+                <div id="props-empty" class="props-empty">
+                    <i data-lucide="mouse-pointer-click" class="props-empty-icon"></i>
+                    <p id="props-empty-message">Select an element to edit its properties</p>
+                </div>
+
+                <div id="props-multi-text" class="props-section" style="display:none">
+                    <h3 class="props-title">Multiple text blocks</h3>
+                    <p id="props-multi-text-count" class="form-summary-selected">0 blocks selected</p>
+                    <div class="prop-group">
+                        <button id="btn-merge-text-blocks" class="secondary-btn" type="button" title="Combine into one editable text box">
+                            <i data-lucide="merge" class="btn-icon-sm"></i>
+                            Merge into one block
+                        </button>
+                    </div>
+                    <p class="form-summary-selected">Tip: Shift+click to select several OCR lines, then merge.</p>
+                </div>
+
+                <div id="props-brush" class="props-section" style="display:none">
+                    <h3 class="props-title">Brush Settings</h3>
+                    <div class="prop-row">
+                        <div class="prop-group flex-1">
+                            <label class="prop-label">Stroke Color</label>
+                            <div class="color-with-clear">
+                                <input type="color" id="prop-brush-color" class="prop-color" value="#01696f">
+                                <button id="prop-clear-brush-color" class="color-clear-btn" title="No stroke">✕</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="prop-group">
+                        <label class="prop-label">Stroke Width</label>
+                        <div class="prop-control-stack">
+                            <div class="prop-value-box compact">
+                                <button class="prop-step-btn" type="button" data-step-target="prop-brush-width" data-step="-1" title="Decrease stroke width">-</button>
+                                <input type="number" id="prop-brush-width" class="prop-input prop-input-compact" min="1" max="20" step="1" value="2">
+                                <span class="prop-unit">px</span>
+                                <button class="prop-step-btn" type="button" data-step-target="prop-brush-width" data-step="1" title="Increase stroke width">+</button>
+                            </div>
+                            <div class="prop-chip-group prop-chip-group-stroke" data-chip-target="prop-brush-width">
+                                <button class="prop-chip prop-chip-stroke" type="button" data-value="1"><span class="stroke-preview stroke-preview-1"></span><span>Thin</span></button>
+                                <button class="prop-chip prop-chip-stroke" type="button" data-value="2"><span class="stroke-preview stroke-preview-2"></span><span>2 px</span></button>
+                                <button class="prop-chip prop-chip-stroke" type="button" data-value="4"><span class="stroke-preview stroke-preview-4"></span><span>4 px</span></button>
+                                <button class="prop-chip prop-chip-stroke" type="button" data-value="8"><span class="stroke-preview stroke-preview-8"></span><span>Bold</span></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="prop-group">
+                        <label class="prop-label">Opacity</label>
+                        <div class="prop-control-stack">
+                            <div class="prop-value-box compact">
+                                <button class="prop-step-btn" type="button" data-step-target="prop-brush-opacity" data-step="-10" title="Decrease opacity by 10">-10</button>
+                                <input type="number" id="prop-brush-opacity" class="prop-input prop-input-compact" min="0" max="100" step="5" value="100">
+                                <span class="prop-unit">%</span>
+                                <button class="prop-step-btn" type="button" data-step-target="prop-brush-opacity" data-step="10" title="Increase opacity by 10">+10</button>
+                            </div>
+                            <div class="prop-chip-group prop-chip-group-opacity" data-chip-target="prop-brush-opacity">
+                                <button class="prop-chip prop-chip-opacity" type="button" data-value="25"><span class="opacity-swatch opacity-25"></span><span>25%</span></button>
+                                <button class="prop-chip prop-chip-opacity" type="button" data-value="50"><span class="opacity-swatch opacity-50"></span><span>50%</span></button>
+                                <button class="prop-chip prop-chip-opacity" type="button" data-value="75"><span class="opacity-swatch opacity-75"></span><span>75%</span></button>
+                                <button class="prop-chip prop-chip-opacity" type="button" data-value="100"><span class="opacity-swatch opacity-100"></span><span>100%</span></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="prop-group">
+                        <label class="prop-label">Line Style</label>
+                        <div class="prop-chip-group prop-chip-group-linestyle" data-chip-target="prop-brush-linestyle">
+                            <button class="prop-chip prop-chip-linestyle active" type="button" data-value="solid"><span class="linestyle-preview linestyle-preview-solid"></span><span>Solid</span></button>
+                            <button class="prop-chip prop-chip-linestyle" type="button" data-value="dashed"><span class="linestyle-preview linestyle-preview-dashed"></span><span>Dashed</span></button>
+                            <button class="prop-chip prop-chip-linestyle" type="button" data-value="dotted"><span class="linestyle-preview linestyle-preview-dotted"></span><span>Dotted</span></button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="props-text" class="props-section" style="display:none">
+                    <h3 class="props-title">Text Properties</h3>
+                    <div class="prop-group">
+                        <label class="prop-label">Font Family</label>
+                        <select id="prop-font-family" class="prop-select">
+                            <option value="Helvetica">Helvetica</option>
+                            <option value="Times New Roman">Times New Roman</option>
+                            <option value="Courier New">Courier New</option>
+                            <option value="Arial">Arial</option>
+                            <option value="Georgia">Georgia</option>
+                            <option value="Verdana">Verdana</option>
+                            <option value="Trebuchet MS">Trebuchet MS</option>
+                            <option value="Palatino">Palatino</option>
+                            <option value="Garamond">Garamond</option>
+                            <option value="Comic Sans MS">Comic Sans MS</option>
+                        </select>
+                    </div>
+                    <div class="prop-row">
+                        <div class="prop-group flex-1">
+                            <label class="prop-label">Size</label>
+                            <input type="number" id="prop-font-size" class="prop-input" min="6" max="200" value="16">
+                        </div>
+                        <div class="prop-group flex-1">
+                            <label class="prop-label">Weight</label>
+                            <select id="prop-font-weight" class="prop-select">
+                                <option value="300">Light</option>
+                                <option value="400" selected>Regular</option>
+                                <option value="500">Medium</option>
+                                <option value="600">Semi Bold</option>
+                                <option value="700">Bold</option>
+                                <option value="900">Black</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="prop-group">
+                        <label class="prop-label">Style</label>
+                        <div class="prop-btn-group prop-btn-group-wide">
+                            <button id="prop-bold" class="prop-toggle" type="button" title="Bold">
+                                <strong>B</strong>
+                            </button>
+                            <button id="prop-italic" class="prop-toggle" type="button" title="Italic">
+                                <em>I</em>
+                            </button>
+                            <button id="prop-underline" class="prop-toggle" type="button" title="Underline">
+                                <u>U</u>
+                            </button>
+                            <button id="prop-strikethrough" class="prop-toggle" type="button" title="Strikethrough">
+                                <s>S</s>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="prop-group">
+                        <label class="prop-label">Text alignment</label>
+                        <div class="prop-btn-group prop-btn-group-wide" id="prop-inbox-text-align-group">
+                            <button class="prop-toggle prop-text-align-btn active" type="button" data-text-align="left" title="Align all text to the left inside the box (select the box, not text inside it)">
+                                <span class="align-icon align-left"></span>
+                            </button>
+                            <button class="prop-toggle prop-text-align-btn" type="button" data-text-align="center" title="Center all text inside the box">
+                                <span class="align-icon align-center"></span>
+                            </button>
+                            <button class="prop-toggle prop-text-align-btn" type="button" data-text-align="right" title="Align all text to the right inside the box">
+                                <span class="align-icon align-right"></span>
+                            </button>
+                            <button class="prop-toggle prop-text-align-btn" type="button" data-text-align="justify" title="Justify all lines inside the box">
+                                <span class="align-icon align-justify"></span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="prop-group">
+                        <label class="prop-label">Align to page</label>
+                        <div class="prop-btn-group prop-btn-group-wide" id="prop-page-align-group">
+                            <button class="prop-toggle prop-page-align-btn active" type="button" data-page-align="left" title="Move text block to left page margin">
+                                <span class="align-icon align-left"></span>
+                            </button>
+                            <button class="prop-toggle prop-page-align-btn" type="button" data-page-align="center" title="Move text block to page center">
+                                <span class="align-icon align-center"></span>
+                            </button>
+                            <button class="prop-toggle prop-page-align-btn" type="button" data-page-align="right" title="Move text block to right page margin">
+                                <span class="align-icon align-right"></span>
+                            </button>
+                            <button class="prop-toggle prop-page-align-btn" type="button" data-page-align="justify" title="Stretch text block across page width">
+                                <span class="align-icon align-justify"></span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="prop-row">
+                        <div class="prop-group flex-1">
+                            <label class="prop-label">Text Color</label>
+                            <input type="color" id="prop-text-color" class="prop-color" value="#000000">
+                        </div>
+                        <div class="prop-group flex-1">
+                            <label class="prop-label">Background</label>
+                            <div class="color-with-clear">
+                                <input type="color" id="prop-text-bg" class="prop-color" value="#ffffff">
+                                <button id="prop-clear-text-bg" class="color-clear-btn" title="Clear background">✕</button>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="props-subsection-label">Spacing</p>
+                    <div class="prop-row">
+                        <div class="prop-group flex-1">
+                            <label class="prop-label">Line Height</label>
+                            <div class="prop-control-stack">
+                                <div class="prop-value-box compact">
+                                    <button class="prop-step-btn" type="button" data-step-target="prop-line-height" data-step="-0.1" title="Decrease line height">−</button>
+                                    <input type="number" id="prop-line-height" class="prop-input prop-input-compact" min="0.5" max="4" step="0.1" value="1.2">
+                                    <button class="prop-step-btn" type="button" data-step-target="prop-line-height" data-step="0.1" title="Increase line height">+</button>
+                                </div>
+                                <div class="prop-chip-group" data-chip-target="prop-line-height">
+                                    <button class="prop-chip" type="button" data-value="1"><span>1×</span></button>
+                                    <button class="prop-chip" type="button" data-value="1.2"><span>1.2×</span></button>
+                                    <button class="prop-chip" type="button" data-value="1.5"><span>1.5×</span></button>
+                                    <button class="prop-chip" type="button" data-value="2"><span>2×</span></button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="prop-group">
+                        <label class="prop-label">Letter Spacing</label>
+                        <div class="prop-control-stack">
+                            <div class="prop-value-box compact">
+                                <button class="prop-step-btn" type="button" data-step-target="prop-char-spacing" data-step="-10" title="Decrease letter spacing">−10</button>
+                                <input type="number" id="prop-char-spacing" class="prop-input prop-input-compact" min="-50" max="400" step="5" value="0">
+                                <span class="prop-unit">px</span>
+                                <button class="prop-step-btn" type="button" data-step-target="prop-char-spacing" data-step="10" title="Increase letter spacing">+10</button>
+                            </div>
+                            <div class="prop-chip-group" data-chip-target="prop-char-spacing">
+                                <button class="prop-chip" type="button" data-value="0"><span>0</span></button>
+                                <button class="prop-chip" type="button" data-value="50"><span>50</span></button>
+                                <button class="prop-chip" type="button" data-value="100"><span>100</span></button>
+                                <button class="prop-chip" type="button" data-value="200"><span>200</span></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="prop-group">
+                        <label class="prop-label">Case</label>
+                        <div class="prop-btn-group prop-btn-group-wide" id="prop-text-case-group">
+                            <button class="prop-toggle prop-case-btn active" type="button" data-case="none" title="Normal case">Aa</button>
+                            <button class="prop-toggle prop-case-btn" type="button" data-case="upper" title="UPPERCASE">AA</button>
+                            <button class="prop-toggle prop-case-btn" type="button" data-case="lower" title="lowercase">aa</button>
+                            <button class="prop-toggle prop-case-btn" type="button" data-case="title" title="Title Case">Ab</button>
+                        </div>
+                    </div>
+                    <p class="props-subsection-label">Effects</p>
+                    <div class="prop-row">
+                        <div class="prop-group flex-1">
+                            <label class="prop-label">Outline</label>
+                            <input type="color" id="prop-text-stroke-color" class="prop-color" value="#000000">
+                        </div>
+                        <div class="prop-group flex-1">
+                            <label class="prop-label">Outline Width</label>
+                            <div class="prop-value-box compact">
+                                <button class="prop-step-btn" type="button" data-step-target="prop-text-stroke-width" data-step="-0.5" title="Thinner outline">−</button>
+                                <input type="number" id="prop-text-stroke-width" class="prop-input prop-input-compact" min="0" max="8" step="0.5" value="0">
+                                <span class="prop-unit">px</span>
+                                <button class="prop-step-btn" type="button" data-step-target="prop-text-stroke-width" data-step="0.5" title="Thicker outline">+</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="prop-group">
+                        <label class="prop-label">Shadow</label>
+                        <div class="prop-btn-group">
+                            <button id="prop-text-shadow" class="prop-toggle" type="button" title="Toggle drop shadow">Shadow</button>
+                            <button id="prop-clear-text-stroke" class="prop-toggle" type="button" title="Remove outline">No outline</button>
+                        </div>
+                    </div>
+                    <div class="prop-group">
+                        <label class="prop-label">Opacity</label>
+                        <div class="prop-control-stack">
+                            <div class="prop-value-box compact">
+                                <button class="prop-step-btn" type="button" data-step-target="prop-text-opacity" data-step="-10" title="Decrease opacity by 10">-10</button>
+                                <input type="number" id="prop-text-opacity" class="prop-input prop-input-compact" min="0" max="100" step="5" value="100">
+                                <span class="prop-unit">%</span>
+                                <button class="prop-step-btn" type="button" data-step-target="prop-text-opacity" data-step="10" title="Increase opacity by 10">+10</button>
+                            </div>
+                            <div class="prop-chip-group prop-chip-group-opacity" data-chip-target="prop-text-opacity">
+                                <button class="prop-chip prop-chip-opacity" type="button" data-value="25"><span class="opacity-swatch opacity-25"></span><span>25%</span></button>
+                                <button class="prop-chip prop-chip-opacity" type="button" data-value="50"><span class="opacity-swatch opacity-50"></span><span>50%</span></button>
+                                <button class="prop-chip prop-chip-opacity" type="button" data-value="75"><span class="opacity-swatch opacity-75"></span><span>75%</span></button>
+                                <button class="prop-chip prop-chip-opacity" type="button" data-value="100"><span class="opacity-swatch opacity-100"></span><span>100%</span></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="prop-group">
+                        <label class="prop-label">Rotation</label>
+                        <div class="prop-control-stack">
+                            <div class="prop-value-box compact">
+                                <button class="prop-step-btn" type="button" data-step-target="prop-text-rotation" data-step="-15" title="Rotate left 15 degrees">-15</button>
+                                <input type="number" id="prop-text-rotation" class="prop-input prop-input-compact" min="0" max="360" step="5" value="0">
+                                <span class="prop-unit">°</span>
+                                <button class="prop-step-btn" type="button" data-step-target="prop-text-rotation" data-step="15" title="Rotate right 15 degrees">+15</button>
+                            </div>
+                            <div class="prop-chip-group prop-chip-group-rotation" data-chip-target="prop-text-rotation">
+                                <button class="prop-chip prop-chip-rotation" type="button" data-value="0"><span class="rotation-glyph">A</span><span>0°</span></button>
+                                <button class="prop-chip prop-chip-rotation" type="button" data-value="90"><span class="rotation-glyph rotate-90">A</span><span>90°</span></button>
+                                <button class="prop-chip prop-chip-rotation" type="button" data-value="180"><span class="rotation-glyph rotate-180">A</span><span>180°</span></button>
+                                <button class="prop-chip prop-chip-rotation" type="button" data-value="270"><span class="rotation-glyph rotate-270">A</span><span>270°</span></button>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="props-subsection-label">AI (OpenRouter)</p>
+                    <div class="prop-group ai-text-actions" id="ai-text-actions-group">
+                        <div class="ai-action-grid">
+                            <button type="button" class="secondary-btn ai-text-action-btn" data-ai-action="rewrite" disabled>Rewrite</button>
+                            <button type="button" class="secondary-btn ai-text-action-btn" data-ai-action="grammar" disabled>Fix grammar</button>
+                            <button type="button" class="secondary-btn ai-text-action-btn" data-ai-action="shorten" disabled>Shorten</button>
+                            <button type="button" class="secondary-btn ai-text-action-btn" data-ai-action="expand" disabled>Expand</button>
+                        </div>
+                        <div class="prop-group ai-translate" id="ai-translate-group" style="margin-top:8px">
+                            <div class="ai-translate-head">
+                                <i data-lucide="languages" class="ai-translate-head-icon"></i>
+                                <span class="prop-label">Translate to</span>
+                            </div>
+                            <div class="ai-translate-combo" id="ai-translate-combo">
+                                <button type="button" id="ai-translate-trigger" class="ai-translate-trigger" aria-haspopup="listbox" aria-expanded="false" disabled>
+                                    <span class="ai-translate-trigger-flag" id="ai-translate-flag">🇬🇧</span>
+                                    <span class="ai-translate-trigger-name" id="ai-translate-name">English</span>
+                                    <i data-lucide="chevron-down" class="ai-translate-caret"></i>
+                                </button>
+                                <div class="ai-translate-panel" id="ai-translate-panel" hidden>
+                                    <div class="ai-translate-search">
+                                        <i data-lucide="search" class="ai-translate-search-icon"></i>
+                                        <input type="text" id="ai-translate-search" class="ai-translate-search-input" placeholder="Search language…" autocomplete="off">
+                                    </div>
+                                    <div class="ai-translate-list" id="ai-translate-list" role="listbox"></div>
+                                </div>
+                            </div>
+                            <input type="text" id="ai-translate-lang-custom" class="prop-input ai-translate-custom-input" placeholder="Type language (e.g. Hungarian)" style="display:none" disabled>
+                            <input type="hidden" id="ai-translate-lang" value="English">
+                            <button type="button" class="secondary-btn ai-text-action-btn ai-translate-go" data-ai-action="translate" disabled>
+                                <i data-lucide="languages" class="btn-icon-sm"></i>
+                                <span>Translate</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="props-shape" class="props-section" style="display:none">
+                    <h3 class="props-title">Shape Properties</h3>
+                    <div class="prop-row">
+                        <div class="prop-group flex-1">
+                            <label class="prop-label">Fill Color</label>
+                            <div class="color-with-clear">
+                                <input type="color" id="prop-fill" class="prop-color" value="#4f98a3">
+                                <button id="prop-clear-fill" class="color-clear-btn" title="No fill">✕</button>
+                            </div>
+                        </div>
+                        <div class="prop-group flex-1">
+                            <label class="prop-label">Stroke Color</label>
+                            <div class="color-with-clear">
+                                <input type="color" id="prop-stroke" class="prop-color" value="#01696f">
+                                <button id="prop-clear-stroke" class="color-clear-btn" title="No stroke">✕</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="prop-group">
+                        <label class="prop-label">Stroke Width</label>
+                        <div class="prop-control-stack">
+                            <div class="prop-value-box compact">
+                                <button class="prop-step-btn" type="button" data-step-target="prop-stroke-width" data-step="-1" title="Decrease stroke width">-</button>
+                                <input type="number" id="prop-stroke-width" class="prop-input prop-input-compact" min="0" max="20" step="1" value="2">
+                                <span class="prop-unit">px</span>
+                                <button class="prop-step-btn" type="button" data-step-target="prop-stroke-width" data-step="1" title="Increase stroke width">+</button>
+                            </div>
+                            <div class="prop-chip-group prop-chip-group-stroke" data-chip-target="prop-stroke-width">
+                                <button class="prop-chip prop-chip-stroke" type="button" data-value="0"><span class="stroke-preview stroke-preview-0"></span><span>Hairline</span></button>
+                                <button class="prop-chip prop-chip-stroke" type="button" data-value="2"><span class="stroke-preview stroke-preview-2"></span><span>2 px</span></button>
+                                <button class="prop-chip prop-chip-stroke" type="button" data-value="4"><span class="stroke-preview stroke-preview-4"></span><span>4 px</span></button>
+                                <button class="prop-chip prop-chip-stroke" type="button" data-value="8"><span class="stroke-preview stroke-preview-8"></span><span>Bold</span></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="corner-radius-group" class="prop-group">
+                        <label class="prop-label">Corner Radius</label>
+                        <div class="prop-control-stack">
+                            <div class="prop-value-box compact">
+                                <button class="prop-step-btn" type="button" data-step-target="prop-corner-radius" data-step="-2" title="Decrease corner radius">-2</button>
+                                <input type="number" id="prop-corner-radius" class="prop-input prop-input-compact" min="0" max="50" step="1" value="0">
+                                <span class="prop-unit">px</span>
+                                <button class="prop-step-btn" type="button" data-step-target="prop-corner-radius" data-step="2" title="Increase corner radius">+2</button>
+                            </div>
+                            <div class="prop-chip-group prop-chip-group-radius" data-chip-target="prop-corner-radius">
+                                <button class="prop-chip prop-chip-radius" type="button" data-value="0"><span class="radius-preview radius-preview-0"></span><span>Sharp</span></button>
+                                <button class="prop-chip prop-chip-radius" type="button" data-value="8"><span class="radius-preview radius-preview-8"></span><span>Soft</span></button>
+                                <button class="prop-chip prop-chip-radius" type="button" data-value="16"><span class="radius-preview radius-preview-16"></span><span>Round</span></button>
+                                <button class="prop-chip prop-chip-radius" type="button" data-value="24"><span class="radius-preview radius-preview-24"></span><span>Pill</span></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="prop-group">
+                        <label class="prop-label">Opacity</label>
+                        <div class="prop-control-stack">
+                            <div class="prop-value-box compact">
+                                <button class="prop-step-btn" type="button" data-step-target="prop-shape-opacity" data-step="-10" title="Decrease opacity by 10">-10</button>
+                                <input type="number" id="prop-shape-opacity" class="prop-input prop-input-compact" min="0" max="100" step="5" value="100">
+                                <span class="prop-unit">%</span>
+                                <button class="prop-step-btn" type="button" data-step-target="prop-shape-opacity" data-step="10" title="Increase opacity by 10">+10</button>
+                            </div>
+                            <div class="prop-chip-group prop-chip-group-opacity" data-chip-target="prop-shape-opacity">
+                                <button class="prop-chip prop-chip-opacity" type="button" data-value="25"><span class="opacity-swatch opacity-25"></span><span>25%</span></button>
+                                <button class="prop-chip prop-chip-opacity" type="button" data-value="50"><span class="opacity-swatch opacity-50"></span><span>50%</span></button>
+                                <button class="prop-chip prop-chip-opacity" type="button" data-value="75"><span class="opacity-swatch opacity-75"></span><span>75%</span></button>
+                                <button class="prop-chip prop-chip-opacity" type="button" data-value="100"><span class="opacity-swatch opacity-100"></span><span>100%</span></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="prop-group">
+                        <label class="prop-label">Rotation</label>
+                        <div class="prop-control-stack">
+                            <div class="prop-value-box compact">
+                                <button class="prop-step-btn" type="button" data-step-target="prop-shape-rotation" data-step="-15" title="Rotate left 15 degrees">-15</button>
+                                <input type="number" id="prop-shape-rotation" class="prop-input prop-input-compact" min="0" max="360" step="5" value="0">
+                                <span class="prop-unit">°</span>
+                                <button class="prop-step-btn" type="button" data-step-target="prop-shape-rotation" data-step="15" title="Rotate right 15 degrees">+15</button>
+                            </div>
+                            <div class="prop-chip-group prop-chip-group-rotation" data-chip-target="prop-shape-rotation">
+                                <button class="prop-chip prop-chip-rotation" type="button" data-value="0"><span class="rotation-glyph">▭</span><span>0°</span></button>
+                                <button class="prop-chip prop-chip-rotation" type="button" data-value="90"><span class="rotation-glyph rotate-90">▭</span><span>90°</span></button>
+                                <button class="prop-chip prop-chip-rotation" type="button" data-value="180"><span class="rotation-glyph rotate-180">▭</span><span>180°</span></button>
+                                <button class="prop-chip prop-chip-rotation" type="button" data-value="270"><span class="rotation-glyph rotate-270">▭</span><span>270°</span></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="props-image" class="props-section" style="display:none">
+                    <h3 class="props-title">Image Properties</h3>
+                    <div class="prop-row">
+                        <div class="prop-group flex-1">
+                            <label class="prop-label">Width</label>
+                            <input type="number" id="prop-img-width" class="prop-input" min="10">
+                        </div>
+                        <div class="prop-group flex-1">
+                            <label class="prop-label">Height</label>
+                            <input type="number" id="prop-img-height" class="prop-input" min="10">
+                        </div>
+                    </div>
+                    <div class="prop-group">
+                        <label class="prop-label">Aspect Ratio</label>
+                        <div class="prop-btn-group">
+                            <button id="prop-lock-ratio" class="prop-toggle active" title="Lock aspect ratio">
+                                <i data-lucide="lock" class="btn-icon-sm"></i>
+                            </button>
+                            <button id="prop-unlock-ratio" class="prop-toggle" title="Unlock aspect ratio">
+                                <i data-lucide="unlock" class="btn-icon-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="prop-group">
+                        <label class="prop-label">Opacity</label>
+                        <div class="prop-control-stack">
+                            <div class="prop-value-box compact">
+                                <button class="prop-step-btn" type="button" data-step-target="prop-img-opacity" data-step="-10" title="Decrease opacity by 10">-10</button>
+                                <input type="number" id="prop-img-opacity" class="prop-input prop-input-compact" min="0" max="100" step="5" value="100">
+                                <span class="prop-unit">%</span>
+                                <button class="prop-step-btn" type="button" data-step-target="prop-img-opacity" data-step="10" title="Increase opacity by 10">+10</button>
+                            </div>
+                            <div class="prop-chip-group prop-chip-group-opacity" data-chip-target="prop-img-opacity">
+                                <button class="prop-chip prop-chip-opacity" type="button" data-value="25"><span class="opacity-swatch opacity-25"></span><span>25%</span></button>
+                                <button class="prop-chip prop-chip-opacity" type="button" data-value="50"><span class="opacity-swatch opacity-50"></span><span>50%</span></button>
+                                <button class="prop-chip prop-chip-opacity" type="button" data-value="75"><span class="opacity-swatch opacity-75"></span><span>75%</span></button>
+                                <button class="prop-chip prop-chip-opacity" type="button" data-value="100"><span class="opacity-swatch opacity-100"></span><span>100%</span></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="prop-group">
+                        <label class="prop-label">Rotation</label>
+                        <div class="prop-control-stack">
+                            <div class="prop-value-box compact">
+                                <button class="prop-step-btn" type="button" data-step-target="prop-img-rotation" data-step="-15" title="Rotate left 15 degrees">-15</button>
+                                <input type="number" id="prop-img-rotation" class="prop-input prop-input-compact" min="0" max="360" step="5" value="0">
+                                <span class="prop-unit">°</span>
+                                <button class="prop-step-btn" type="button" data-step-target="prop-img-rotation" data-step="15" title="Rotate right 15 degrees">+15</button>
+                            </div>
+                            <div class="prop-chip-group prop-chip-group-rotation" data-chip-target="prop-img-rotation">
+                                <button class="prop-chip prop-chip-rotation" type="button" data-value="0"><span class="rotation-glyph">▣</span><span>0°</span></button>
+                                <button class="prop-chip prop-chip-rotation" type="button" data-value="90"><span class="rotation-glyph rotate-90">▣</span><span>90°</span></button>
+                                <button class="prop-chip prop-chip-rotation" type="button" data-value="180"><span class="rotation-glyph rotate-180">▣</span><span>180°</span></button>
+                                <button class="prop-chip prop-chip-rotation" type="button" data-value="270"><span class="rotation-glyph rotate-270">▣</span><span>270°</span></button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="prop-group">
+                        <label class="prop-label">Arrange</label>
+                        <div class="prop-btn-group">
+                            <button id="prop-bring-front" class="prop-toggle" title="Bring to front">
+                                <i data-lucide="arrow-up" class="btn-icon-sm"></i>
+                            </button>
+                            <button id="prop-send-back" class="prop-toggle" title="Send to back">
+                                <i data-lucide="arrow-down" class="btn-icon-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="props-table" class="props-section" style="display:none">
+                    <h3 class="props-title">Table</h3>
+                    <p id="table-place-hint" class="props-description" style="display:none; font-size: 12px; color: var(--color-text-muted); margin-bottom: 12px; line-height: 1.4;">
+                        Click and drag on the page to draw a table. Double-click a cell to type. Use the Text or Image tool inside a cell for more content.
+                    </p>
+                    <p id="table-edit-hint" class="props-description" style="display:none; font-size: 12px; color: var(--color-text-muted); margin-bottom: 12px; line-height: 1.4;">
+                        Double-click a cell to edit text. Select a cell, then use Image to add a picture. Drag other objects into a cell to attach them.
+                    </p>
+                    <div class="prop-row">
+                        <div class="prop-group flex-1">
+                            <label class="prop-label">Rows</label>
+                            <input type="number" id="prop-table-rows" class="prop-input" min="1" max="20" step="1" value="3">
+                        </div>
+                        <div class="prop-group flex-1">
+                            <label class="prop-label">Columns</label>
+                            <input type="number" id="prop-table-cols" class="prop-input" min="1" max="20" step="1" value="3">
+                        </div>
+                    </div>
+                    <div class="prop-row">
+                        <div class="prop-group flex-1">
+                            <label class="prop-label">Fill Color</label>
+                            <div class="color-with-clear">
+                                <input type="color" id="prop-table-fill" class="prop-color" value="#ffffff">
+                                <button id="prop-table-clear-fill" class="color-clear-btn" title="No fill">✕</button>
+                            </div>
+                        </div>
+                        <div class="prop-group flex-1">
+                            <label class="prop-label">Line Color</label>
+                            <div class="color-with-clear">
+                                <input type="color" id="prop-table-stroke" class="prop-color" value="#333333">
+                                <button id="prop-table-clear-stroke" class="color-clear-btn" title="No lines">✕</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="prop-group">
+                        <label class="prop-label">Line Thickness</label>
+                        <div class="prop-value-box compact" id="table-line-thickness-controls">
+                            <button class="prop-step-btn" type="button" data-step-target="prop-table-stroke-width" data-step="-1" title="Decrease line thickness">-</button>
+                            <input type="number" id="prop-table-stroke-width" class="prop-input prop-input-compact" min="0" max="20" step="1" value="1">
+                            <span class="prop-unit">px</span>
+                            <button class="prop-step-btn" type="button" data-step-target="prop-table-stroke-width" data-step="1" title="Increase line thickness">+</button>
+                        </div>
+                    </div>
+                    <div class="prop-group">
+                        <label class="prop-label">Line Style</label>
+                        <div class="prop-chip-group prop-chip-group-table-lines">
+                            <button type="button" id="btn-table-stroke-none" class="prop-chip prop-chip-table-linestyle" data-table-stroke-mode="none" title="No grid lines">
+                                <span class="stroke-preview stroke-preview-none" aria-hidden="true"></span>
+                                <span>No lines</span>
+                            </button>
+                            <button class="prop-chip prop-chip-table-linestyle active" type="button" data-table-line-style="solid" title="Solid lines">
+                                <span class="linestyle-preview linestyle-preview-solid" aria-hidden="true"></span>
+                                <span>Solid</span>
+                            </button>
+                            <button class="prop-chip prop-chip-table-linestyle" type="button" data-table-line-style="dashed" title="Dashed lines">
+                                <span class="linestyle-preview linestyle-preview-dashed" aria-hidden="true"></span>
+                                <span>Dashed</span>
+                            </button>
+                            <button class="prop-chip prop-chip-table-linestyle" type="button" data-table-line-style="dotted" title="Dotted lines">
+                                <span class="linestyle-preview linestyle-preview-dotted" aria-hidden="true"></span>
+                                <span>Dotted</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="prop-group">
+                        <label class="prop-label">Text Overlap</label>
+                        <select id="prop-table-text-layer" class="prop-select">
+                            <option value="above">Text above cell elements</option>
+                            <option value="below">Text below cell elements</option>
+                        </select>
+                    </div>
+                    <div id="table-cell-ops" class="prop-group" style="display:none">
+                        <label class="prop-label">Active cell</label>
+                        <p id="table-cell-position" class="form-summary-selected">Row 1, Col 1</p>
+                        <div class="table-cell-ops-grid">
+                            <button type="button" id="btn-table-insert-row-above" class="secondary-btn table-cell-op-btn" title="Insert row above">
+                                <i data-lucide="arrow-up" class="btn-icon-sm"></i>
+                                <span>Row above</span>
+                            </button>
+                            <button type="button" id="btn-table-insert-row-below" class="secondary-btn table-cell-op-btn" title="Insert row below">
+                                <i data-lucide="arrow-down" class="btn-icon-sm"></i>
+                                <span>Row below</span>
+                            </button>
+                            <button type="button" id="btn-table-insert-col-left" class="secondary-btn table-cell-op-btn" title="Insert column left">
+                                <i data-lucide="arrow-left" class="btn-icon-sm"></i>
+                                <span>Col left</span>
+                            </button>
+                            <button type="button" id="btn-table-insert-col-right" class="secondary-btn table-cell-op-btn" title="Insert column right">
+                                <i data-lucide="arrow-right" class="btn-icon-sm"></i>
+                                <span>Col right</span>
+                            </button>
+                            <button type="button" id="btn-table-delete-row" class="secondary-btn table-cell-op-btn" title="Delete row">
+                                <i data-lucide="minus" class="btn-icon-sm"></i>
+                                <span>Delete row</span>
+                            </button>
+                            <button type="button" id="btn-table-delete-col" class="secondary-btn table-cell-op-btn" title="Delete column">
+                                <i data-lucide="minus" class="btn-icon-sm"></i>
+                                <span>Delete col</span>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="prop-group">
+                        <label class="prop-label">Layout</label>
+                        <button type="button" id="btn-table-distribute-evenly" class="secondary-btn" title="Reset row and column sizes to equal">
+                            <i data-lucide="columns-3" class="btn-icon-sm"></i>
+                            Distribute evenly
+                        </button>
+                    </div>
+                    <div class="prop-group">
+                        <label class="prop-label">CSV</label>
+                        <div class="prop-row">
+                            <button type="button" id="btn-table-export-csv" class="secondary-btn flex-1" title="Export this table as CSV">
+                                <i data-lucide="download" class="btn-icon-sm"></i>
+                                Export
+                            </button>
+                            <button type="button" id="btn-table-import-csv" class="secondary-btn flex-1" title="Create table from CSV file">
+                                <i data-lucide="upload" class="btn-icon-sm"></i>
+                                Import
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="props-sticky" class="props-section" style="display:none">
+                    <h3 class="props-title">Sticky Note</h3>
+                    <div class="prop-group">
+                        <label class="prop-label">Note Color</label>
+                        <div class="sticky-color-grid">
+                            <button class="sticky-color-btn active" type="button" data-sticky-color="#fff9c4" style="background:#fff9c4" title="Yellow"></button>
+                            <button class="sticky-color-btn" type="button" data-sticky-color="#c8e6c9" style="background:#c8e6c9" title="Green"></button>
+                            <button class="sticky-color-btn" type="button" data-sticky-color="#f8bbd0" style="background:#f8bbd0" title="Pink"></button>
+                            <button class="sticky-color-btn" type="button" data-sticky-color="#b3e5fc" style="background:#b3e5fc" title="Blue"></button>
+                            <button class="sticky-color-btn" type="button" data-sticky-color="#ffe0b2" style="background:#ffe0b2" title="Orange"></button>
+                        </div>
+                    </div>
+                    <div class="prop-group">
+                        <label class="prop-label">Opacity</label>
+                        <div class="prop-control-stack">
+                            <div class="prop-value-box compact">
+                                <button class="prop-step-btn" type="button" data-step-target="prop-sticky-opacity" data-step="-10" title="Decrease opacity by 10">-10</button>
+                                <input type="number" id="prop-sticky-opacity" class="prop-input prop-input-compact" min="0" max="100" step="5" value="100">
+                                <span class="prop-unit">%</span>
+                                <button class="prop-step-btn" type="button" data-step-target="prop-sticky-opacity" data-step="10" title="Increase opacity by 10">+10</button>
+                            </div>
+                            <div class="prop-chip-group prop-chip-group-opacity" data-chip-target="prop-sticky-opacity">
+                                <button class="prop-chip prop-chip-opacity" type="button" data-value="25"><span class="opacity-swatch opacity-25"></span><span>25%</span></button>
+                                <button class="prop-chip prop-chip-opacity" type="button" data-value="50"><span class="opacity-swatch opacity-50"></span><span>50%</span></button>
+                                <button class="prop-chip prop-chip-opacity" type="button" data-value="75"><span class="opacity-swatch opacity-75"></span><span>75%</span></button>
+                                <button class="prop-chip prop-chip-opacity" type="button" data-value="100"><span class="opacity-swatch opacity-100"></span><span>100%</span></button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="props-signature" class="props-section" style="display:none">
+                    <h3 class="props-title">Signature Gallery</h3>
+                    <p class="props-description" style="font-size: 12px; color: var(--color-text-muted); margin-bottom: 12px; line-height: 1.4;">
+                        Select a signature or initial to place it on the document, or create a new one.
+                    </p>
+                    
+                    <div class="sig-gallery-section">
+                        <div class="sig-gallery-header">
+                            <span class="sig-gallery-label">My Signatures</span>
+                            <button id="btn-add-sig-gallery" class="sig-add-link-btn" type="button" title="Add new signature">
+                                <i data-lucide="plus" class="btn-icon-sm"></i> Add
+                            </button>
+                        </div>
+                        <div id="signature-list" class="signature-list-gallery">
+                            <div class="signature-empty-item">No signatures saved</div>
+                        </div>
+                    </div>
+                    
+                    <div class="sig-gallery-section" style="margin-top: 16px;">
+                        <div class="sig-gallery-header">
+                            <span class="sig-gallery-label">My Initials</span>
+                            <button id="btn-add-init-gallery" class="sig-add-link-btn" type="button" title="Add new initials">
+                                <i data-lucide="plus" class="btn-icon-sm"></i> Add
+                            </button>
+                        </div>
+                        <div id="initials-list" class="signature-list-gallery">
+                            <div class="signature-empty-item">No initials saved</div>
+                        </div>
+                    </div>
+
+                    <div class="sig-gallery-section cert-sign-section">
+                        <div class="sig-gallery-header">
+                            <span class="sig-gallery-label">Digital Certificate</span>
+                        </div>
+                        <p class="cert-sign-hint">
+                            Sign the PDF with a PKCS#12 certificate (.p12 / .pfx), or generate a self-signed certificate in the app. The signature is embedded in the file and can be verified in PDF readers.
+                        </p>
+                        <button id="btn-cert-sign" class="secondary-btn cert-sign-btn" type="button">
+                            <i data-lucide="shield-check" class="btn-icon-sm"></i>
+                            Sign with Certificate
+                        </button>
+                    </div>
+                </div>
+
+                <div id="props-page" class="props-section" style="display:none">
+                    <h3 class="props-title">Page Properties</h3>
+                    <div class="prop-row">
+                        <div class="prop-group flex-1">
+                            <label class="prop-label">Width (pts)</label>
+                            <input type="number" id="prop-page-width" class="prop-input" disabled>
+                        </div>
+                        <div class="prop-group flex-1">
+                            <label class="prop-label">Height (pts)</label>
+                            <input type="number" id="prop-page-height" class="prop-input" disabled>
+                        </div>
+                    </div>
+                    <div class="prop-group">
+                        <label class="prop-label">Rotate Page</label>
+                        <div class="prop-btn-group">
+                            <button id="btn-rotate-90" class="prop-toggle" title="Rotate 90° CW">
+                                90°
+                            </button>
+                            <button id="btn-rotate-180" class="prop-toggle" title="Rotate 180°">
+                                180°
+                            </button>
+                            <button id="btn-rotate-270" class="prop-toggle" title="Rotate 270° CW">
+                                270°
+                            </button>
+                        </div>
+                    </div>
+                    <div class="prop-group">
+                        <button id="btn-delete-page" class="danger-btn" title="Delete this page">
+                            <i data-lucide="trash-2" class="btn-icon-sm"></i>
+                            Delete Page
+                        </button>
+                    </div>
+                    <div class="prop-group">
+                        <div class="page-action-grid">
+                            <button id="btn-duplicate-page" class="secondary-btn" title="Duplicate current page">
+                                <i data-lucide="copy" class="btn-icon-sm"></i>
+                                Duplicate
+                            </button>
+                            <button id="btn-export-page" class="secondary-btn" title="Export current page as a PDF">
+                                <i data-lucide="download" class="btn-icon-sm"></i>
+                                Export Page
+                            </button>
+                            <button id="btn-extract-text" class="secondary-btn" title="Extract page text to a TXT file">
+                                <i data-lucide="file-text" class="btn-icon-sm"></i>
+                                Extract Text
+                            </button>
+                            <button id="btn-export-png" class="secondary-btn" title="Export page as PNG">
+                                <i data-lucide="image" class="btn-icon-sm"></i>
+                                Export PNG
+                            </button>
+                            <button id="btn-ocr-page" class="secondary-btn" title="OCR scanned page text (Tesseract)">
+                                <i data-lucide="scan-text" class="btn-icon-sm"></i>
+                                OCR Page
+                            </button>
+                            <div class="prop-group ai-ocr-font-group">
+                                <label class="prop-label" for="ai-ocr-font-family">AI OCR font</label>
+                                <select id="ai-ocr-font-family" class="prop-select" title="Font used for AI OCR text boxes">
+                                    <option value="Helvetica">Helvetica</option>
+                                    <option value="Times New Roman">Times New Roman</option>
+                                    <option value="Courier New">Courier New</option>
+                                    <option value="Arial">Arial</option>
+                                    <option value="Georgia">Georgia</option>
+                                    <option value="Verdana">Verdana</option>
+                                    <option value="Trebuchet MS">Trebuchet MS</option>
+                                    <option value="Palatino">Palatino</option>
+                                    <option value="Garamond">Garamond</option>
+                                    <option value="Comic Sans MS">Comic Sans MS</option>
+                                </select>
+                            </div>
+                            <button id="btn-ai-ocr-page" class="secondary-btn" title="AI OCR: replace page scan with text, or copy into your own text box" disabled>
+                                <i data-lucide="sparkles" class="btn-icon-sm"></i>
+                                AI OCR
+                            </button>
+                            <button id="btn-detect-tables" class="secondary-btn" title="Detect tables on page">
+                                <i data-lucide="table" class="btn-icon-sm"></i>
+                                Find Tables
+                            </button>
+                            <button id="btn-export-tables" class="secondary-btn" title="Export tables as CSV" style="display:none">
+                                <i data-lucide="sheet" class="btn-icon-sm"></i>
+                                Export Tables CSV
+                            </button>
+                        </div>
+                    </div>
+                    <div id="tables-overlay-info" class="prop-group" style="display:none">
+                        <label class="prop-label">Tables detected</label>
+                        <p id="tables-count-text" class="form-summary-selected">0 tables</p>
+                        <div id="detected-table-actions" class="prop-group" style="display:none">
+                            <label class="prop-label" for="detected-table-select">Convert to editable</label>
+                            <select id="detected-table-select" class="prop-select"></select>
+                            <button type="button" id="btn-make-table-editable" class="secondary-btn" title="Create an editable table from detected data">
+                                <i data-lucide="table-2" class="btn-icon-sm"></i>
+                                Make editable
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="props-stamp" class="props-section props-stamp-panel" style="display:none">
+                    <h3 class="props-title">Stamp</h3>
+                    <input type="hidden" id="prop-stamp-type" value="approved">
+                    <div class="prop-group stamp-presets-group">
+                        <div class="stamp-presets-header">
+                            <label class="prop-label">Presets</label>
+                            <button type="button" id="btn-manage-stamps" class="secondary-btn btn-sm stamp-manage-btn" title="Create, edit, and remove stamps">
+                                <i data-lucide="settings-2" class="btn-icon-sm"></i>
+                                Manage
+                            </button>
+                        </div>
+                        <div id="stamp-preset-grid" class="stamp-preset-grid" role="radiogroup" aria-label="Stamp presets"></div>
+                    </div>
+                    <div class="prop-group">
+                        <label class="prop-label" for="prop-stamp-text">Label</label>
+                        <input type="text" id="prop-stamp-text" class="prop-input stamp-label-input" maxlength="48" placeholder="STAMP" autocomplete="off" spellcheck="false">
+                    </div>
+                    <div class="prop-group">
+                        <label class="stamp-color-field" for="prop-stamp-accent">
+                            <span class="stamp-color-preview" id="prop-stamp-accent-preview" style="background:#15803d"></span>
+                            <span class="stamp-color-copy">
+                                <span class="stamp-color-copy-title">Ink color</span>
+                                <code id="prop-stamp-accent-hex">#15803D</code>
+                            </span>
+                            <input type="color" id="prop-stamp-accent" class="stamp-color-native" value="#15803d" title="Choose stamp color">
+                        </label>
+                    </div>
+                    <p id="stamp-edit-hint" class="stamp-hint" style="display:none">Drag handles on the canvas to resize or rotate.</p>
+                    <p id="stamp-place-hint" class="stamp-hint">Click on the page to place your stamp.</p>
+                    <button type="button" id="btn-save-stamp-to-library" class="secondary-btn btn-sm stamp-save-library-btn" style="display:none" title="Save this stamp design to your library">
+                        <i data-lucide="bookmark-plus" class="btn-icon-sm"></i>
+                        Save to library
+                    </button>
+                </div>
+
+                <div id="props-link" class="props-section" style="display:none">
+                    <h3 class="props-title">Hyperlinks</h3>
+
+                    <div class="link-action-row">
+                        <button type="button" id="btn-link-selected-text" class="btn-link-action primary" title="Link the selected text">
+                            <i data-lucide="type"></i>
+                            Link selected text
+                        </button>
+                        <button type="button" id="btn-link-draw-area" class="btn-link-action" title="Draw a clickable region">
+                            <i data-lucide="square-dashed"></i>
+                            Draw area
+                        </button>
+                    </div>
+
+                    <div class="prop-group">
+                        <label class="prop-label">Preset</label>
+                        <div class="link-preset-chips" id="link-preset-chips">
+                            <button type="button" class="prop-chip active" data-preset="web">Web</button>
+                            <button type="button" class="prop-chip" data-preset="email">Email</button>
+                            <button type="button" class="prop-chip" data-preset="phone">Phone</button>
+                            <button type="button" class="prop-chip" data-preset="page">Page</button>
+                        </div>
+                    </div>
+
+                    <div class="prop-group">
+                        <label class="prop-label">Link type</label>
+                        <select id="prop-link-kind" class="prop-select">
+                            <option value="uri">Web / email / phone</option>
+                            <option value="goto">Page in document</option>
+                        </select>
+                    </div>
+                    <div class="prop-group" id="prop-link-uri-group">
+                        <label class="prop-label" id="prop-link-uri-label">URL</label>
+                        <input type="text" id="prop-link-uri" class="prop-input" placeholder="https://example.com">
+                    </div>
+                    <div class="prop-group" id="prop-link-page-group" style="display:none">
+                        <label class="prop-label">Target page (1-based)</label>
+                        <input type="number" id="prop-link-page" class="prop-input" min="1" value="1">
+                    </div>
+
+                    <div class="link-toolbar-row">
+                        <button type="button" id="btn-link-test" class="btn-link-mini" title="Open link in browser">Test</button>
+                        <label class="link-toggle-label">
+                            <input type="checkbox" id="prop-link-show-highlights" checked>
+                            Show highlights
+                        </label>
+                    </div>
+
+                    <div class="prop-group">
+                        <div class="link-list-header">
+                            <label class="prop-label">Links</label>
+                            <select id="prop-link-scope" class="prop-select prop-select-compact">
+                                <option value="page">This page</option>
+                                <option value="document">All pages</option>
+                            </select>
+                        </div>
+                        <ul id="link-list" class="link-list" aria-label="Document links"></ul>
+                        <p id="link-list-empty" class="link-list-empty">No links on this page. Select text and use “Link selected text”, or draw an area.</p>
+                    </div>
+                </div>
+
+                <div id="props-document" class="props-section" style="display:none">
+                    <h3 class="props-title">Document</h3>
+                    <div class="prop-group">
+                        <label class="prop-label">Title</label>
+                        <input type="text" id="meta-title" class="prop-input">
+                    </div>
+                    <div class="prop-group">
+                        <label class="prop-label">Author</label>
+                        <input type="text" id="meta-author" class="prop-input">
+                    </div>
+                    <div class="prop-group">
+                        <label class="prop-label">Subject</label>
+                        <input type="text" id="meta-subject" class="prop-input">
+                    </div>
+                    <div class="prop-group">
+                        <label class="prop-label">Keywords</label>
+                        <input type="text" id="meta-keywords" class="prop-input">
+                    </div>
+                    <div class="prop-group">
+                        <button id="btn-ai-suggest-metadata" class="secondary-btn" type="button" disabled>
+                            <i data-lucide="sparkles" class="btn-icon-sm"></i>
+                            Suggest Metadata (AI)
+                        </button>
+                    </div>
+                    <div class="prop-group" id="ai-meta-summary-group" style="display:none">
+                        <label class="prop-label">AI Summary</label>
+                        <p id="ai-meta-summary" class="form-summary-selected"></p>
+                    </div>
+                    <div class="prop-group">
+                        <button id="btn-save-metadata" class="secondary-btn" type="button">Save Metadata</button>
+                    </div>
+                    <div class="prop-group">
+                        <label class="prop-label">Bookmarks (one per line: level|title|page)</label>
+                        <textarea id="meta-bookmarks" class="prop-input" rows="6" placeholder="1|Chapter 1|1"></textarea>
+                    </div>
+                    <div class="prop-group">
+                        <button id="btn-save-bookmarks" class="secondary-btn" type="button">Save Bookmarks</button>
+                    </div>
+                </div>
+
+                <div id="props-form" class="props-section" style="display:none">
+                    <h3 class="props-title">Form Fields</h3>
+                    <div class="form-summary-card">
+                        <span id="prop-form-count" class="form-summary-count">0 fields on this page</span>
+                        <span id="prop-form-selected" class="form-summary-selected">Select a field to inspect its value</span>
+                    </div>
+                    <div class="prop-group">
+                        <label class="prop-label">Create Field</label>
+                        <div class="form-create-grid">
+                            <button id="btn-add-form-text" class="secondary-btn form-create-btn" type="button">
+                                <i data-lucide="text-cursor-input" class="btn-icon-sm"></i>
+                                Text
+                            </button>
+                            <button id="btn-add-form-checkbox" class="secondary-btn form-create-btn" type="button">
+                                <i data-lucide="check-square" class="btn-icon-sm"></i>
+                                Checkbox
+                            </button>
+                            <button id="btn-add-form-choice" class="secondary-btn form-create-btn" type="button">
+                                <i data-lucide="list" class="btn-icon-sm"></i>
+                                Dropdown
+                            </button>
+                            <button id="btn-add-form-radio" class="secondary-btn form-create-btn" type="button">
+                                <i data-lucide="circle-dot" class="btn-icon-sm"></i>
+                                Radio
+                            </button>
+                            <button id="btn-add-form-listbox" class="secondary-btn form-create-btn" type="button">
+                                <i data-lucide="list-ordered" class="btn-icon-sm"></i>
+                                List Box
+                            </button>
+                        </div>
+                    </div>
+                    <div class="prop-group">
+                        <button id="btn-ai-fill-forms" class="secondary-btn" type="button" disabled>
+                            <i data-lucide="sparkles" class="btn-icon-sm"></i>
+                            Fill with AI
+                        </button>
+                    </div>
+                    <div class="prop-group">
+                        <label class="prop-label">Page Fields</label>
+                        <div id="prop-form-list" class="form-field-list"></div>
+                        <p class="form-list-hint">Click a field to edit it. Ctrl/Cmd+click selects multiple fields of the same type for size matching.</p>
+                    </div>
+                    <div id="prop-form-match-group" class="prop-group" style="display:none">
+                        <label class="prop-label">Match Size</label>
+                        <span id="prop-form-match-label" class="form-match-hint"></span>
+                        <div class="form-match-grid">
+                            <button id="btn-form-match-width" class="secondary-btn form-match-btn" type="button">
+                                <i data-lucide="move-horizontal" class="btn-icon-sm"></i>
+                                Match Width
+                            </button>
+                            <button id="btn-form-match-height" class="secondary-btn form-match-btn" type="button">
+                                <i data-lucide="move-vertical" class="btn-icon-sm"></i>
+                                Match Height
+                            </button>
+                            <button id="btn-form-match-both" class="secondary-btn form-match-btn form-match-btn-primary" type="button">
+                                <i data-lucide="maximize-2" class="btn-icon-sm"></i>
+                                Match Both
+                            </button>
+                        </div>
+                    </div>
+                    <div id="prop-form-detail" class="form-detail" style="display:none">
+                        <div class="prop-group">
+                            <label class="prop-label">Field Name</label>
+                            <input type="text" id="prop-form-name" class="prop-input">
+                        </div>
+                        <div class="prop-group">
+                            <label class="prop-label">Label</label>
+                            <input type="text" id="prop-form-label" class="prop-input">
+                        </div>
+                        <div class="prop-group">
+                            <label class="prop-label">Type</label>
+                            <input type="text" id="prop-form-type" class="prop-input" disabled>
+                        </div>
+                        <div id="prop-form-text-group" class="prop-group" style="display:none">
+                            <label class="prop-label">Value</label>
+                            <input type="text" id="prop-form-text" class="prop-input" placeholder="Enter field value">
+                        </div>
+                        <div id="prop-form-choice-group" class="prop-group" style="display:none">
+                            <label class="prop-label">Selected Option</label>
+                            <select id="prop-form-choice" class="prop-select"></select>
+                        </div>
+                        <div id="prop-form-choices-edit-group" class="prop-group" style="display:none">
+                            <label class="prop-label">Edit Dropdown Options (One per line: value|label or just label)</label>
+                            <textarea id="prop-form-choices-edit" class="prop-textarea" rows="5" placeholder="Option 1&#10;Option 2&#10;value3|Label 3"></textarea>
+                        </div>
+                        <div id="prop-form-bool-group" class="prop-group" style="display:none">
+                            <label class="prop-label">State</label>
+                            <label class="form-bool-row">
+                                <input type="checkbox" id="prop-form-bool">
+                                <span id="prop-form-bool-label">Checked</span>
+                            </label>
+                        </div>
+                        <div class="prop-group form-field-actions">
+                            <button id="btn-duplicate-form" type="button" class="secondary-btn form-duplicate-btn">
+                                <i data-lucide="copy" class="btn-icon-sm"></i>
+                                Duplicate Field
+                            </button>
+                            <button id="btn-delete-form" type="button" class="danger-btn form-delete-btn">
+                                <i data-lucide="trash-2" class="btn-icon-sm"></i>
+                                Delete Field
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+        </div>
+
+        <!-- Export PDF Modal -->
+        <div id="export-modal" class="modal" style="display:none">
+            <div class="modal-backdrop"></div>
+            <div class="modal-content">
+                <h2 class="modal-title">Export PDF</h2>
+                <div class="prop-group">
+                    <label class="form-bool-row">
+                        <input type="checkbox" id="export-flatten">
+                        <span>Flatten form fields (non-editable)</span>
+                    </label>
+                </div>
+                <div class="prop-group">
+                    <label class="form-bool-row">
+                        <input type="checkbox" id="export-split-pages">
+                        <span>Split into separate PDFs (ZIP)</span>
+                    </label>
+                </div>
+                <div class="prop-row">
+                    <div class="prop-group flex-1">
+                        <label class="prop-label">From page</label>
+                        <input type="number" id="export-from-page" class="prop-input" min="1" value="1">
+                    </div>
+                    <div class="prop-group flex-1">
+                        <label class="prop-label">To page</label>
+                        <input type="number" id="export-to-page" class="prop-input" min="1" value="1">
+                    </div>
+                </div>
+                <div class="prop-group">
+                    <label class="prop-label">User password (optional)</label>
+                    <input type="password" id="export-user-password" class="prop-input" autocomplete="new-password">
+                </div>
+                <div class="prop-group">
+                    <label class="prop-label">Owner password (optional)</label>
+                    <input type="password" id="export-owner-password" class="prop-input" autocomplete="new-password">
+                </div>
+                <div class="modal-actions">
+                    <button id="btn-cancel-export" class="modal-btn cancel" type="button">Cancel</button>
+                    <button id="btn-confirm-export" class="modal-btn confirm" type="button">Download</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Unsaved Changes Modal -->
+        <div id="unsaved-modal" class="modal modal-unsaved" style="display:none">
+            <div class="modal-backdrop"></div>
+            <div class="modal-content">
+                <h2 id="unsaved-modal-title" class="modal-title">Unsaved changes</h2>
+                <p id="unsaved-modal-message" class="form-summary-selected"></p>
+                <div class="modal-actions">
+                    <button id="btn-unsaved-cancel" class="modal-btn cancel" type="button">Cancel</button>
+                    <button id="btn-unsaved-discard" class="modal-btn discard" type="button">Discard changes</button>
+                    <button id="btn-unsaved-save" class="modal-btn confirm" type="button">Save and continue</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI OCR Results Modal -->
+        <div id="ai-ocr-modal" class="modal modal-ai-ocr" style="display:none">
+            <div class="modal-backdrop"></div>
+            <div class="modal-content modal-content-wide">
+                <h2 class="modal-title">AI OCR — extracted text</h2>
+                <p id="ai-ocr-modal-hint" class="form-summary-selected">
+                    Replace source turns the page scan (or a selected picture) into an editable text box the same size. Keep image copies the text so you can place your own box.
+                </p>
+                <div class="prop-group">
+                    <label class="prop-label" for="ai-ocr-text">Recognized text</label>
+                    <textarea id="ai-ocr-text" class="prop-input ai-ocr-textarea" rows="10" spellcheck="true"></textarea>
+                </div>
+                <div class="modal-actions modal-actions-stack">
+                    <button id="btn-ai-ocr-cancel" class="modal-btn cancel" type="button">Cancel</button>
+                    <button id="btn-ai-ocr-copy" class="modal-btn confirm secondary-outline" type="button" title="Keep the image; copy text for your own text box">
+                        Keep image — copy text
+                    </button>
+                    <button id="btn-ai-ocr-replace" class="modal-btn confirm" type="button" title="Replace the page scan or selected picture with a same-size text box">
+                        Replace source
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Password Modal -->
+        <div id="password-modal" class="modal" style="display:none">
+            <div class="modal-backdrop"></div>
+            <div class="modal-content">
+                <h2 class="modal-title">PDF Password Required</h2>
+                <p class="form-summary-selected">This PDF is encrypted. Enter the password to open it.</p>
+                <div class="prop-group">
+                    <label class="prop-label">Password</label>
+                    <input type="password" id="pdf-password-input" class="prop-input" autocomplete="current-password">
+                </div>
+                <div class="modal-actions">
+                    <button id="btn-cancel-password" class="modal-btn cancel" type="button">Cancel</button>
+                    <button id="btn-confirm-password" class="modal-btn confirm" type="button">Open</button>
+                </div>
+            </div>
+        </div>
+
+        <input type="file" id="merge-file-input" accept=".pdf,application/pdf" hidden>
+
+        <!-- New PDF Modal -->
+        <div id="new-pdf-modal" class="modal" style="display:none">
+            <div class="modal-backdrop"></div>
+            <div class="modal-content">
+                <h2 class="modal-title">Create New PDF</h2>
+                <div class="prop-group">
+                    <label class="prop-label">Page Size</label>
+                    <select id="new-page-size" class="prop-select">
+                        <option value="A4">A4 (595 × 842)</option>
+                        <option value="Letter">Letter (612 × 792)</option>
+                        <option value="Legal">Legal (612 × 1008)</option>
+                        <option value="A3">A3 (842 × 1191)</option>
+                        <option value="A5">A5 (420 × 595)</option>
+                        <option value="custom">Custom</option>
+                    </select>
+                </div>
+                <div id="custom-size-fields" class="prop-row" style="display:none">
+                    <div class="prop-group flex-1">
+                        <label class="prop-label">Width (pts)</label>
+                        <input type="number" id="new-custom-width" class="prop-input" value="595" min="100" max="5000">
+                    </div>
+                    <div class="prop-group flex-1">
+                        <label class="prop-label">Height (pts)</label>
+                        <input type="number" id="new-custom-height" class="prop-input" value="842" min="100" max="5000">
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button id="btn-cancel-new" class="modal-btn cancel">Cancel</button>
+                    <button id="btn-create-new" class="modal-btn confirm">Create</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stamp Manager Modal -->
+        <div id="stamp-manager-modal" class="modal modal-stamp-manager" style="display:none">
+            <div class="modal-backdrop"></div>
+            <div class="modal-content modal-content-wide">
+                <h2 id="stamp-manager-title" class="modal-title">Manage stamps</h2>
+
+                <div id="stamp-manager-list-view" class="stamp-manager-list-view">
+                    <div class="stamp-manager-toolbar">
+                        <button type="button" id="btn-stamp-manager-create" class="modal-btn confirm">
+                            <i data-lucide="plus" class="btn-icon-sm"></i>
+                            Create stamp
+                        </button>
+                    </div>
+                    <section class="stamp-manager-section">
+                        <h3 class="stamp-manager-section-title">Your stamps</h3>
+                        <div id="stamp-manager-custom-list" class="stamp-manager-list"></div>
+                    </section>
+                    <section class="stamp-manager-section">
+                        <h3 class="stamp-manager-section-title">Built-in presets</h3>
+                        <div id="stamp-manager-builtin-list" class="stamp-manager-list"></div>
+                    </section>
+                    <div class="modal-actions">
+                        <button type="button" id="btn-stamp-manager-close" class="modal-btn cancel">Close</button>
+                    </div>
+                </div>
+
+                <div id="stamp-manager-editor-view" class="stamp-manager-editor-view" style="display:none">
+                    <div class="stamp-editor-layout">
+                        <div class="stamp-editor-form">
+                            <div class="prop-group">
+                                <label class="prop-label" for="stamp-editor-text">Label</label>
+                                <input type="text" id="stamp-editor-text" class="prop-input stamp-label-input" maxlength="48" placeholder="STAMP" autocomplete="off" spellcheck="false">
+                            </div>
+                            <div class="prop-group">
+                                <label class="prop-label" for="stamp-editor-shape">Shape</label>
+                                <select id="stamp-editor-shape" class="prop-select">
+                                    <option value="rounded">Rounded rectangle</option>
+                                    <option value="rect">Rectangle</option>
+                                    <option value="ellipse">Ellipse</option>
+                                    <option value="double">Double border</option>
+                                    <option value="cross">Cross / void</option>
+                                </select>
+                            </div>
+                            <div class="stamp-editor-font-row">
+                                <div class="prop-group">
+                                    <label class="prop-label" for="stamp-editor-font-family">Font</label>
+                                    <select id="stamp-editor-font-family" class="prop-select"></select>
+                                </div>
+                                <div class="prop-group">
+                                    <label class="prop-label" for="stamp-editor-font-weight">Weight</label>
+                                    <select id="stamp-editor-font-weight" class="prop-select">
+                                        <option value="300">Light</option>
+                                        <option value="400">Regular</option>
+                                        <option value="500">Medium</option>
+                                        <option value="600">Semi-bold</option>
+                                        <option value="700" selected>Bold</option>
+                                        <option value="800">Extra-bold</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="prop-group">
+                                <label class="prop-label">Sign / icon</label>
+                                <div id="stamp-editor-sign-grid" class="stamp-sign-grid" role="radiogroup" aria-label="Stamp sign"></div>
+                            </div>
+                            <div class="stamp-editor-color-row">
+                                <div class="prop-group">
+                                    <label class="prop-label" for="stamp-editor-accent">Ink color</label>
+                                    <input type="color" id="stamp-editor-accent" class="stamp-editor-color-input" value="#15803d">
+                                </div>
+                                <div class="prop-group">
+                                    <label class="prop-label" for="stamp-editor-text-color">Text color</label>
+                                    <input type="color" id="stamp-editor-text-color" class="stamp-editor-color-input" value="#14532d">
+                                </div>
+                            </div>
+                            <div class="stamp-editor-sliders">
+                                <div class="prop-group">
+                                    <label class="prop-label" for="stamp-editor-fill-opacity">Fill opacity</label>
+                                    <input type="range" id="stamp-editor-fill-opacity" min="0" max="0.5" step="0.01" value="0.12">
+                                </div>
+                                <div class="prop-group">
+                                    <label class="prop-label" for="stamp-editor-stroke-width">Border width</label>
+                                    <input type="number" id="stamp-editor-stroke-width" class="prop-input" min="1" max="8" step="0.5" value="2">
+                                </div>
+                                <div class="prop-group">
+                                    <label class="prop-label" for="stamp-editor-font-size">Font size</label>
+                                    <input type="number" id="stamp-editor-font-size" class="prop-input" min="8" max="36" step="1" value="16">
+                                </div>
+                                <div class="prop-group">
+                                    <label class="prop-label" for="stamp-editor-char-spacing">Letter spacing</label>
+                                    <input type="number" id="stamp-editor-char-spacing" class="prop-input" min="0" max="300" step="10" value="70">
+                                </div>
+                                <div class="prop-group">
+                                    <label class="prop-label" for="stamp-editor-rotation">Default rotation (°)</label>
+                                    <input type="number" id="stamp-editor-rotation" class="prop-input" min="-45" max="45" step="1" value="0">
+                                </div>
+                                <div class="prop-group">
+                                    <label class="prop-label" for="stamp-editor-width">Width (px)</label>
+                                    <input type="number" id="stamp-editor-width" class="prop-input" min="60" max="400" step="4" value="168">
+                                </div>
+                                <div class="prop-group">
+                                    <label class="prop-label" for="stamp-editor-height">Height (px)</label>
+                                    <input type="number" id="stamp-editor-height" class="prop-input" min="40" max="200" step="4" value="52">
+                                </div>
+                            </div>
+                            <div class="stamp-editor-toggles">
+                                <label class="prop-checkbox"><input type="checkbox" id="stamp-editor-dashed"> Dashed border</label>
+                                <label class="prop-checkbox"><input type="checkbox" id="stamp-editor-double-border"> Inner border</label>
+                                <label class="prop-checkbox"><input type="checkbox" id="stamp-editor-cross"> Cross overlay</label>
+                                <label class="prop-checkbox"><input type="checkbox" id="stamp-editor-strike"> Strikethrough text</label>
+                            </div>
+                        </div>
+                        <div class="stamp-editor-preview-panel">
+                            <label class="prop-label">Preview</label>
+                            <div class="stamp-editor-preview-wrap">
+                                <canvas id="stamp-editor-preview"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" id="btn-stamp-editor-delete" class="modal-btn discard">Delete</button>
+                        <button type="button" id="btn-stamp-editor-cancel" class="modal-btn cancel">Back</button>
+                        <button type="button" id="btn-stamp-editor-save" class="modal-btn confirm">Save to library</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Signature Dialog Modal -->
+        <div id="signature-modal" class="modal" style="display:none">
+            <div class="modal-backdrop"></div>
+            <div class="modal-content" style="max-width: 600px; width: 90%;">
+                <h2 class="modal-title" id="sig-modal-title">Create Signature</h2>
+                
+                <!-- Tab headers -->
+                <div class="sig-tabs">
+                    <button class="sig-tab active" type="button" data-tab="sig-draw">Draw</button>
+                    <button class="sig-tab" type="button" data-tab="sig-type">Type</button>
+                    <button class="sig-tab" type="button" data-tab="sig-upload">Upload</button>
+                </div>
+                
+                <!-- Tab body: Draw -->
+                <div id="tab-sig-draw" class="sig-tab-content">
+                    <div class="canvas-sig-wrapper">
+                        <canvas id="signature-pad-canvas" width="540" height="200"></canvas>
+                    </div>
+                    <div class="sig-canvas-controls">
+                        <div class="sig-color-selectors">
+                            <button class="sig-color-btn sig-color-picker-wrapper" id="sig-color-picker-wrapper" type="button" title="Custom color picker">
+                                <i data-lucide="pipette" class="sig-color-picker-icon"></i>
+                                <input type="color" id="sig-color-picker" value="#000000">
+                            </button>
+                        </div>
+                        <button id="btn-clear-sig-pad" class="secondary-btn btn-sm" type="button">Clear Pad</button>
+                    </div>
+                </div>
+                
+                <!-- Tab body: Type -->
+                <div id="tab-sig-type" class="sig-tab-content" style="display:none">
+                    <div class="prop-group">
+                        <label class="prop-label">Type your name</label>
+                        <input type="text" id="sig-type-input" class="prop-input" placeholder="Your Name" style="font-size:16px;">
+                    </div>
+                    <div class="sig-font-previews">
+                        <div class="sig-font-row active" data-font="Great Vibes">
+                            <span class="sig-font-preview-text great-vibes-font">Your Name</span>
+                            <span class="sig-font-name">Elegant (Great Vibes)</span>
+                        </div>
+                        <div class="sig-font-row" data-font="Alex Brush">
+                            <span class="sig-font-preview-text alex-brush-font">Your Name</span>
+                            <span class="sig-font-name">Classic (Alex Brush)</span>
+                        </div>
+                        <div class="sig-font-row" data-font="Satisfy">
+                            <span class="sig-font-preview-text satisfy-font">Your Name</span>
+                            <span class="sig-font-name">Modern (Satisfy)</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Tab body: Upload -->
+                <div id="tab-sig-upload" class="sig-tab-content" style="display:none">
+                    <div class="sig-upload-dropzone" id="sig-upload-dropzone">
+                        <i data-lucide="image" class="sig-upload-icon"></i>
+                        <p>Drag and drop a PNG/JPEG image of your signature, or click to upload</p>
+                        <button class="upload-btn secondary" type="button" id="btn-browse-sig-img" style="margin-top:8px;">Browse File</button>
+                        <input type="file" id="sig-image-file" accept="image/png,image/jpeg" hidden>
+                    </div>
+                    <div class="sig-upload-preview-container" id="sig-upload-preview-container" style="display:none;">
+                        <img id="sig-upload-preview-img" src="" alt="Signature Preview">
+                        <div class="sig-upload-options" style="margin-top: 10px; display: flex; gap: 12px; align-items: center;">
+                            <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; cursor: pointer;">
+                                <input type="checkbox" id="sig-upload-remove-bg" checked>
+                                <span>Remove white background</span>
+                            </label>
+                            <button id="btn-remove-sig-upload" class="danger-btn btn-sm" type="button" style="margin-left: auto;">Remove Image</button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-actions" style="margin-top:20px;">
+                    <button id="btn-cancel-sig" class="modal-btn cancel" type="button">Cancel</button>
+                    <button id="btn-save-sig" class="modal-btn confirm" type="button">Create & Save</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Certificate Sign Modal -->
+        <div id="cert-sign-modal" class="modal" style="display:none">
+            <div class="modal-backdrop"></div>
+            <div class="modal-content modal-content-wide cert-sign-modal-content">
+                <h2 class="modal-title">Sign with Certificate</h2>
+
+                <div class="cert-modal-tabs">
+                    <button class="cert-modal-tab active" type="button" data-cert-tab="sign">Use Certificate</button>
+                    <button class="cert-modal-tab" type="button" data-cert-tab="generate">Generate Certificate</button>
+                </div>
+
+                <div id="cert-tab-sign" class="cert-tab-panel">
+                    <p class="form-summary-selected">
+                        Upload a PKCS#12 file (.p12 or .pfx), then draw a rectangle on the page for the signature field.
+                    </p>
+
+                    <div class="cert-stamp-preview">
+                        <div class="cert-stamp-preview-card">
+                            <div class="cert-stamp-preview-topbar"></div>
+                            <div class="cert-stamp-preview-content">
+                                <div class="cert-stamp-preview-badge" aria-hidden="true">
+                                    <span>✓</span>
+                                </div>
+                                <div class="cert-stamp-preview-body">
+                                    <div class="cert-stamp-preview-title">DIGITALLY SIGNED</div>
+                                    <div class="cert-stamp-preview-name">Your Name</div>
+                                    <div class="cert-stamp-preview-email">email@example.com</div>
+                                    <div class="cert-stamp-preview-meta">Date: 2026-06-20 18:00:00</div>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="form-summary-selected">Modern badge layout with balanced alignment and full-width accent bar.</p>
+                    </div>
+
+                    <div class="prop-group">
+                        <label class="prop-label">Certificate file</label>
+                        <div class="cert-file-row">
+                            <span id="cert-file-label" class="cert-file-label">No certificate selected</span>
+                            <button id="btn-browse-cert" class="secondary-btn btn-sm" type="button">Browse…</button>
+                            <input type="file" id="cert-file-input" accept=".p12,.pfx,application/x-pkcs12" hidden>
+                        </div>
+                    </div>
+
+                    <div class="prop-group">
+                        <label class="prop-label" for="cert-password">Certificate password</label>
+                        <input type="password" id="cert-password" class="prop-input" autocomplete="off" placeholder="Leave blank if none">
+                    </div>
+
+                    <div class="prop-row">
+                        <div class="prop-group flex-1">
+                            <label class="prop-label" for="cert-reason">Reason (optional)</label>
+                            <input type="text" id="cert-reason" class="prop-input" placeholder="e.g. I approve this document">
+                        </div>
+                        <div class="prop-group flex-1">
+                            <label class="prop-label" for="cert-location">Location (optional)</label>
+                            <input type="text" id="cert-location" class="prop-input" placeholder="e.g. New York, NY">
+                        </div>
+                    </div>
+
+                    <div class="prop-group">
+                        <label class="prop-label" for="cert-contact-info">Contact info (optional)</label>
+                        <input type="email" id="cert-contact-info" class="prop-input" placeholder="email@example.com">
+                    </div>
+
+                    <details class="cert-advanced-details">
+                        <summary>Advanced appearance override</summary>
+                        <div class="prop-group">
+                            <label class="prop-label" for="cert-appearance-text">Custom stamp text</label>
+                            <textarea id="cert-appearance-text" class="prop-input cert-appearance-input" rows="4" placeholder="Leave blank for the modern default layout. Use %(signer)s and %(ts)s."></textarea>
+                        </div>
+                    </details>
+
+                    <div class="modal-actions">
+                        <button id="btn-cancel-cert-sign" class="modal-btn cancel" type="button">Cancel</button>
+                        <button id="btn-place-cert-sign" class="modal-btn confirm" type="button">Place Signature Field</button>
+                    </div>
+                </div>
+
+                <div id="cert-tab-generate" class="cert-tab-panel" style="display:none">
+                    <p class="form-summary-selected">
+                        Create a self-signed PKCS#12 certificate on the server (same as OpenSSL req + pkcs12 -export). You can download it and reuse it later.
+                    </p>
+
+                    <div class="prop-group">
+                        <label class="prop-label" for="gen-cn">Common Name (CN) *</label>
+                        <input type="text" id="gen-cn" class="prop-input" placeholder="Your full name">
+                    </div>
+
+                    <div class="prop-row">
+                        <div class="prop-group flex-1">
+                            <label class="prop-label" for="gen-email">Email</label>
+                            <input type="email" id="gen-email" class="prop-input" placeholder="email@example.com">
+                        </div>
+                        <div class="prop-group flex-1">
+                            <label class="prop-label" for="gen-country">Country (2-letter)</label>
+                            <input type="text" id="gen-country" class="prop-input" maxlength="2" placeholder="US">
+                        </div>
+                    </div>
+
+                    <div class="prop-row">
+                        <div class="prop-group flex-1">
+                            <label class="prop-label" for="gen-organization">Organization</label>
+                            <input type="text" id="gen-organization" class="prop-input" placeholder="Company name">
+                        </div>
+                        <div class="prop-group flex-1">
+                            <label class="prop-label" for="gen-ou">Organizational Unit</label>
+                            <input type="text" id="gen-ou" class="prop-input" placeholder="Department">
+                        </div>
+                    </div>
+
+                    <div class="prop-row">
+                        <div class="prop-group flex-1">
+                            <label class="prop-label" for="gen-state">State / Province</label>
+                            <input type="text" id="gen-state" class="prop-input" placeholder="California">
+                        </div>
+                        <div class="prop-group flex-1">
+                            <label class="prop-label" for="gen-locality">Locality / City</label>
+                            <input type="text" id="gen-locality" class="prop-input" placeholder="San Francisco">
+                        </div>
+                    </div>
+
+                    <div class="prop-row">
+                        <div class="prop-group flex-1">
+                            <label class="prop-label" for="gen-days">Valid for (days)</label>
+                            <input type="number" id="gen-days" class="prop-input" min="1" max="3650" value="365">
+                        </div>
+                        <div class="prop-group flex-1">
+                            <label class="prop-label" for="gen-key-bits">Key size (RSA)</label>
+                            <select id="gen-key-bits" class="prop-select">
+                                <option value="2048">2048 bit</option>
+                                <option value="4096" selected>4096 bit</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="prop-group">
+                        <label class="prop-label" for="gen-export-password">Export password for .p12 *</label>
+                        <input type="password" id="gen-export-password" class="prop-input" autocomplete="new-password" placeholder="Password to protect the .p12 file">
+                    </div>
+
+                    <div class="modal-actions">
+                        <button id="btn-cancel-cert-generate" class="modal-btn cancel" type="button">Cancel</button>
+                        <button id="btn-generate-cert" class="modal-btn confirm" type="button">Generate &amp; Use Certificate</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Settings Modal -->
+        <div id="ai-settings-modal" class="modal" style="display:none">
+            <div class="modal-backdrop"></div>
+            <div class="modal-content">
+                <h2 class="modal-title">AI Settings (OpenRouter)</h2>
+                <p class="form-summary-selected">API key is stored on the server only, never in your browser.</p>
+                <div id="ai-settings-env-note" class="prop-group" style="display:none">
+                    <p class="form-summary-selected">Some values are set via environment variables and override saved settings.</p>
+                </div>
+                <div class="prop-group">
+                    <label class="prop-label" for="ai-api-key">API Key</label>
+                    <input type="password" id="ai-api-key" class="prop-input" autocomplete="off" placeholder="Leave blank to keep existing key">
+                    <p id="ai-key-preview" class="form-summary-selected"></p>
+                </div>
+                <div class="prop-group">
+                    <label class="prop-label" for="ai-model-select">Model</label>
+                    <select id="ai-model-select" class="prop-select">
+                        <option value="">Loading models…</option>
+                    </select>
+                </div>
+                <div class="prop-group">
+                    <label class="prop-label" for="ai-model-custom">Custom model ID</label>
+                    <input type="text" id="ai-model-custom" class="prop-input" placeholder="e.g. openai/gpt-4o-mini">
+                </div>
+                <div class="prop-group">
+                    <label class="prop-label" for="ai-settings-token">Settings token (optional)</label>
+                    <input type="password" id="ai-settings-token" class="prop-input" autocomplete="off" placeholder="Required if server sets AI_SETTINGS_TOKEN">
+                </div>
+                <p class="form-summary-selected">
+                    <a href="https://openrouter.ai/keys" target="_blank" rel="noopener noreferrer">Get an API key at openrouter.ai</a>
+                </p>
+                <div class="modal-actions">
+                    <button id="btn-ai-settings-cancel" class="modal-btn cancel" type="button">Cancel</button>
+                    <button id="btn-ai-settings-test" class="modal-btn" type="button">Test</button>
+                    <button id="btn-ai-settings-save" class="modal-btn confirm" type="button">Save</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="about-modal" class="modal modal-about" style="display:none" role="dialog" aria-labelledby="about-title" aria-modal="true">
+            <div class="modal-backdrop"></div>
+            <div class="modal-content about-dialog">
+                <button id="btn-about-close" class="about-dialog-close icon-btn-sm" type="button" title="Close" aria-label="Close">
+                    <i data-lucide="x" class="btn-icon-sm"></i>
+                </button>
+
+                <div class="about-dialog-hero">
+                    <div class="about-dialog-mark" aria-hidden="true">
+                        <svg width="40" height="40" viewBox="0 0 36 36" fill="none">
+                            <rect x="1.5" y="1.5" width="33" height="33" rx="8" fill="var(--color-surface)" stroke="currentColor" stroke-width="1.5"/>
+                            <path d="M11 8.5H19L24 13.5V26.5C24 27.3284 23.3284 28 22.5 28H11C10.1716 28 9.5 27.3284 9.5 26.5V10C9.5 9.17157 10.1716 8.5 11 8.5Z" fill="var(--color-surface-2)" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                            <path d="M19 8.5V13.5H24" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M14 22.6L21.8 14.8C22.3862 14.2138 23.3369 14.2138 23.9231 14.8C24.5093 15.3862 24.5093 16.3369 23.9231 16.9231L16.1 24.7L12.8 25.4L13.5 22.1Z" fill="var(--color-surface)" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                            <path d="M19.9 16.7L22 18.8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                        </svg>
+                    </div>
+                    <h2 id="about-title" class="about-dialog-title">PDFEdit</h2>
+                    <span id="about-version" class="about-dialog-version">Version 1.0.0</span>
+                </div>
+
+                <p class="about-dialog-tagline">
+                    View, annotate, fill forms, redact, sign, and export PDF documents.
+                </p>
+
+                <div class="about-dialog-footnote">
+                    <i data-lucide="folder" class="about-dialog-footnote-icon" aria-hidden="true"></i>
+                    <span id="about-data-dir" class="about-dialog-path">—</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="quit-modal" class="modal modal-quit" style="display:none">
+            <div class="modal-backdrop"></div>
+            <div class="modal-content">
+                <h2 class="modal-title">Quit PDFEdit?</h2>
+                <p id="quit-modal-message" class="form-summary-selected">
+                    Any unsaved document changes will be lost.
+                </p>
+                <div class="modal-actions">
+                    <button id="btn-quit-cancel" class="modal-btn cancel" type="button">Cancel</button>
+                    <button id="btn-quit-confirm" class="modal-btn discard" type="button">Quit</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Assistant Panel -->
+        <aside id="ai-panel" class="ai-panel" style="display:none" aria-label="AI Assistant">
+            <div class="ai-panel-header">
+                <h2 class="ai-panel-title">AI Assistant</h2>
+                <button id="btn-ai-panel-close" class="icon-btn-sm" type="button" title="Close">
+                    <i data-lucide="x" class="btn-icon-sm"></i>
+                </button>
+            </div>
+            <div class="ai-panel-toolbar">
+                <label class="ai-scope-label">
+                    <input type="radio" name="ai-scope" value="page" checked> This page
+                </label>
+                <label class="ai-scope-label">
+                    <input type="radio" name="ai-scope" value="document"> Whole document
+                </label>
+            </div>
+            <div class="ai-quick-actions">
+                <button type="button" class="ai-quick-btn" data-ai-prompt="Summarize this document.">Summarize</button>
+                <button type="button" class="ai-quick-btn" data-ai-prompt="List the key points as bullet points.">Key points</button>
+                <button type="button" class="ai-quick-btn" data-ai-prompt="Find dates, names, and important numbers mentioned.">Find details</button>
+            </div>
+            <div id="ai-chat-messages" class="ai-chat-messages"></div>
+            <div class="ai-chat-input-row">
+                <textarea id="ai-chat-input" class="ai-chat-input" rows="2" placeholder="Ask about this PDF…"></textarea>
+                <button id="btn-ai-chat-send" class="modal-btn confirm" type="button" disabled>Send</button>
+            </div>
+            <p id="ai-chat-status" class="ai-chat-status"></p>
+        </aside>
+
+        <!-- Toast Container -->
+        <div id="toast-container" class="toast-container"></div>
+
+        <div id="editor-context-menu" class="context-menu" style="display:none">
+            <button id="btn-context-pin" type="button" class="context-menu-item" title="Pin sticky note" style="display:none">
+                <i data-lucide="pin" class="btn-icon-sm"></i>
+                <span>Pin</span>
+            </button>
+            <button id="btn-context-unpin" type="button" class="context-menu-item" title="Unpin sticky note" style="display:none">
+                <i data-lucide="pin-off" class="btn-icon-sm"></i>
+                <span>Unpin</span>
+            </button>
+            <div id="context-align-section" class="context-menu-section" style="display:none">
+                <span class="context-menu-label">Align to page margins</span>
+                <div class="context-align-grid">
+                    <button type="button" class="context-align-btn" data-page-align="left" title="Align left edges to left margin">
+                        <i data-lucide="align-left" class="btn-icon-sm"></i>
+                        <span>Left</span>
+                    </button>
+                    <button type="button" class="context-align-btn" data-page-align="center" title="Align horizontally to page center">
+                        <i data-lucide="align-center" class="btn-icon-sm"></i>
+                        <span>Center</span>
+                    </button>
+                    <button type="button" class="context-align-btn" data-page-align="right" title="Align right edges to right margin">
+                        <i data-lucide="align-right" class="btn-icon-sm"></i>
+                        <span>Right</span>
+                    </button>
+                    <button type="button" class="context-align-btn" data-page-align="top" title="Align top edges to top margin">
+                        <i data-lucide="align-start-vertical" class="btn-icon-sm"></i>
+                        <span>Top</span>
+                    </button>
+                    <button type="button" class="context-align-btn" data-page-align="middle" title="Align vertically to page center">
+                        <i data-lucide="align-center-vertical" class="btn-icon-sm"></i>
+                        <span>Middle</span>
+                    </button>
+                            <button type="button" class="context-align-btn" data-page-align="bottom" title="Align bottom edges to bottom margin">
+                                <i data-lucide="align-end-vertical" class="btn-icon-sm"></i>
+                                <span>Bottom</span>
+                            </button>
+                        </div>
+                        <button type="button" id="btn-context-merge-text" class="context-menu-item context-merge-btn" style="display:none" title="Combine selected text into one box">
+                            <i data-lucide="git-merge" class="btn-icon-sm"></i>
+                            <span>Merge into one block</span>
+                        </button>
+                    </div>
+            <div id="context-table-section" class="context-menu-section" style="display:none">
+                <span class="context-menu-label">Table</span>
+                <button type="button" id="btn-context-table-row-above" class="context-menu-item" data-table-action="insertRowAbove" title="Insert row above">
+                    <i data-lucide="arrow-up" class="btn-icon-sm"></i>
+                    <span>Insert row above</span>
+                </button>
+                <button type="button" id="btn-context-table-row-below" class="context-menu-item" data-table-action="insertRowBelow" title="Insert row below">
+                    <i data-lucide="arrow-down" class="btn-icon-sm"></i>
+                    <span>Insert row below</span>
+                </button>
+                <button type="button" id="btn-context-table-col-left" class="context-menu-item" data-table-action="insertColLeft" title="Insert column left">
+                    <i data-lucide="arrow-left" class="btn-icon-sm"></i>
+                    <span>Insert column left</span>
+                </button>
+                <button type="button" id="btn-context-table-col-right" class="context-menu-item" data-table-action="insertColRight" title="Insert column right">
+                    <i data-lucide="arrow-right" class="btn-icon-sm"></i>
+                    <span>Insert column right</span>
+                </button>
+                <button type="button" id="btn-context-table-delete-row" class="context-menu-item" data-table-action="deleteRow" title="Delete row">
+                    <i data-lucide="minus" class="btn-icon-sm"></i>
+                    <span>Delete row</span>
+                </button>
+                <button type="button" id="btn-context-table-delete-col" class="context-menu-item" data-table-action="deleteCol" title="Delete column">
+                    <i data-lucide="minus" class="btn-icon-sm"></i>
+                    <span>Delete column</span>
+                </button>
+                <button type="button" id="btn-context-table-export-csv" class="context-menu-item" data-table-action="exportCsv" title="Export table as CSV">
+                    <i data-lucide="download" class="btn-icon-sm"></i>
+                    <span>Export table CSV</span>
+                </button>
+            </div>
+            <div id="context-table-divider" class="context-menu-divider" style="display:none"></div>
+            <div id="context-ai-section" class="context-menu-section" style="display:none">
+                <span class="context-menu-label">AI text</span>
+                <button type="button" class="context-menu-item ai-context-action" data-ai-action="rewrite">
+                    <i data-lucide="sparkles" class="btn-icon-sm"></i>
+                    <span>Rewrite</span>
+                </button>
+                <button type="button" class="context-menu-item ai-context-action" data-ai-action="grammar">
+                    <i data-lucide="spell-check" class="btn-icon-sm"></i>
+                    <span>Fix grammar</span>
+                </button>
+                <button type="button" class="context-menu-item ai-context-action" data-ai-action="translate">
+                    <i data-lucide="languages" class="btn-icon-sm"></i>
+                    <span>Translate</span>
+                </button>
+            </div>
+            <div id="context-menu-divider" class="context-menu-divider" style="display:none"></div>
+            <div id="context-menu-divider-ai" class="context-menu-divider" style="display:none"></div>
+            <button id="btn-context-delete" type="button" class="context-menu-item context-menu-item-danger" title="Delete selected objects">
+                <i data-lucide="trash-2" class="btn-icon-sm"></i>
+                <span>Delete</span>
+            </button>
+        </div>
+
+        <!-- Mobile Banner -->
+        <div id="mobile-banner" class="mobile-banner" style="display:none">
+            <i data-lucide="monitor" class="btn-icon"></i>
+            <span>Please use a desktop browser for full editing capabilities.</span>
+        </div>
+
+        <!-- Hidden file input for image insertion -->
+        <input type="file" id="image-input" accept="image/png,image/jpeg,image/svg+xml,image/webp" hidden>
+        <input type="file" id="table-csv-input" accept=".csv,text/csv" hidden>
+    </div>
+
+    <script>
+        window.__PDFEDIT_AUTH_TOKEN__ = {{ auth_token|tojson }};
+    </script>
+    <script>
+    // Fabric.js 5.x can emit the non-standard baseline "alphabetical".
+    // Chromium rejects it loudly, so normalize at the canvas context boundary.
+    (function () {
+        const validBaseline = 'alphabetic';
+        try {
+            let proto = window.CanvasRenderingContext2D && CanvasRenderingContext2D.prototype;
+            let descriptor = null;
+            while (proto && !descriptor) {
+                descriptor = Object.getOwnPropertyDescriptor(proto, 'textBaseline');
+                if (!descriptor) proto = Object.getPrototypeOf(proto);
+            }
+            if (descriptor && descriptor.get && descriptor.set && descriptor.configurable !== false) {
+                Object.defineProperty(proto, 'textBaseline', {
+                    configurable: true,
+                    enumerable: descriptor.enumerable,
+                    get: function () {
+                        return descriptor.get.call(this);
+                    },
+                    set: function (value) {
+                        descriptor.set.call(this, value === 'alphabetical' ? validBaseline : value);
+                    },
+                });
+            }
+        } catch (err) {
+            console.warn('Unable to patch canvas textBaseline:', err);
+        }
+
+        if (typeof fabric === 'undefined') return;
+        ['Object', 'Text', 'IText', 'Textbox'].forEach(function (name) {
+            const cls = fabric[name];
+            if (cls && cls.prototype && cls.prototype.textBaseline === 'alphabetical') {
+                cls.prototype.textBaseline = validBaseline;
+            }
+        });
+    })();
+    </script>
+    <script src="{{ url_for('static', filename='api.js') }}?v=1.0.13"></script>
+    <script src="{{ url_for('static', filename='stamps.js') }}?v=2.2.0"></script>
+    <script src="{{ url_for('static', filename='stamp-manager.js') }}?v=1.1.0"></script>
+    <script src="{{ url_for('static', filename='editor.js') }}?v=1.0.23"></script>
+    <script src="{{ url_for('static', filename='forms.js') }}?v=1.0.5"></script>
+    <script src="{{ url_for('static', filename='toolbar.js') }}?v=1.0.10"></script>
+    <script src="{{ url_for('static', filename='signature.js') }}?v=1.0.5"></script>
+    <script src="{{ url_for('static', filename='cert-signature.js') }}?v=1.1.0"></script>
+    <script src="{{ url_for('static', filename='ai-settings.js') }}?v=1.0.0"></script>
+    <script src="{{ url_for('static', filename='ai-assistant.js') }}?v=1.0.0"></script>
+    <script src="{{ url_for('static', filename='app.js') }}?v=1.0.20"></script>
+</body>
+</html>

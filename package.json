@@ -1,0 +1,31 @@
+{
+  "name": "pdfedit-desktop",
+  "productName": "PDFEdit",
+  "version": "1.0.0",
+  "description": "Desktop PDF editor powered by PyMuPDF and Fabric.js",
+  "main": "desktop/main.js",
+  "homepage": "https://github.com/ClaudiuJitea/PDFEdit",
+  "author": {
+    "name": "PDFEdit Contributors",
+    "email": "pdfedit@example.com"
+  },
+  "license": "MIT",
+  "private": true,
+  "desktopName": "pdfedit",
+  "scripts": {
+    "start": "electron .",
+    "dev": "bash scripts/dev.sh",
+    "postinstall": "bash scripts/ensure-electron.sh",
+    "build:sidecar": "bash build/build-sidecar.sh",
+    "build:icon": "bash build/prepare-icon.sh",
+    "build:desktop": "npm run build:sidecar && npm run build:icon && electron-builder --config build/electron-builder.yml",
+    "build": "npm run build:sidecar && npm run build:desktop",
+    "test": "npm run test:backend && npm run test:desktop",
+    "test:backend": "cd backend && .venv/bin/python -m pytest ../tests/backend -q",
+    "test:desktop": "node --test tests/desktop/*.test.js"
+  },
+  "devDependencies": {
+    "electron": "^43.3.0",
+    "electron-builder": "^26.15.3"
+  }
+}
