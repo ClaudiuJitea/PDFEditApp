@@ -2157,9 +2157,9 @@ def flatten_form_widgets(doc):
 def build_export_doc(doc, from_page=None, to_page=None):
     export_doc = fitz.open()
     if from_page is None or to_page is None:
-        export_doc.insert_pdf(doc, widgets=True)
+        export_doc.insert_pdf(doc)
     else:
-        export_doc.insert_pdf(doc, from_page=from_page, to_page=to_page, widgets=True)
+        export_doc.insert_pdf(doc, from_page=from_page, to_page=to_page)
     return export_doc
 
 

@@ -9,3 +9,25 @@ def test_get_page_for_new_pdf(app_client):
     payload = page.get_json()
     assert "image" in payload
     assert payload["pdf_width"] > 0
+
+
+def test_export_pdf_after_save(app_client):
+    client, token = app_client
+    headers = {"X-PDFEdit-Token": token}
+    create = client.post("/api/new", json={"size": "A4"}, headers=headers)
+    session_id = create.get_json()["session_id"]
+
+    save = client.post(
+        f"/api/page/{session_id}/0/save",
+        json={"elements": [], "deleted_originals": [], "forms": []},
+        headers=headers,
+    )
+    assert save.status_code == 200
+
+    exported = client.post(
+        f"/api/export/{session_id}",
+        json={"flatten": False},
+        headers=headers,
+    )
+    assert exported.status_code == 200
+    assert exported.data[:4] == b"%PDF"
