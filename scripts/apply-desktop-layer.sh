@@ -66,19 +66,20 @@ html = html.replace(
     '<script src="{{ url_for(\'static\', filename=\'vendor/lucide/lucide.min.js\') }}?v=0.468.0"></script>',
 )
 
-about_quit_buttons = '''                <span class="top-bar-sep"></span>
-                <button id="btn-about" class="top-btn icon-only" title="About PDFEdit">
-                    <i data-lucide="info" class="btn-icon"></i>
-                </button>
-                <button id="btn-quit" class="top-btn top-btn-danger" title="Quit PDFEdit">
-                    <i data-lucide="log-out" class="btn-icon"></i>
-                    <span>Quit</span>
-                </button>
+about_quit_buttons = '''                <div class="top-btn-group top-btn-group-icons" role="group" aria-label="App">
+                    <button id="btn-about" class="top-btn icon-only" title="About PDFEdit">
+                        <i data-lucide="info" class="btn-icon"></i>
+                    </button>
+                    <button id="btn-quit" class="top-btn top-btn-quiet-danger" title="Quit PDFEdit">
+                        <i data-lucide="log-out" class="btn-icon"></i>
+                        <span>Quit</span>
+                    </button>
+                </div>
 '''
 if 'id="btn-about"' not in html:
     html = html.replace(
         '            <div class="top-bar-right">',
-        about_quit_buttons + '            <div class="top-bar-right">',
+        '            <div class="top-bar-right">\n' + about_quit_buttons,
         1,
     )
 

@@ -2911,6 +2911,7 @@ def upload_pdf():
         "session_id": session_id,
         "page_count": len(doc),
         "page_sizes": page_sizes,
+        "original_filename": file.filename,
         "metadata": dict(doc.metadata or {}),
         "bookmarks": toc_to_json(doc),
     })
@@ -3057,6 +3058,7 @@ def new_pdf():
         "page_count": 1,
         "source": "new",
         "page_size": size_name,
+        "original_filename": "untitled.pdf",
     })
 
     page_sizes = [{"width": w, "height": h}]
@@ -3064,6 +3066,7 @@ def new_pdf():
         "session_id": session_id,
         "page_count": 1,
         "page_sizes": page_sizes,
+        "original_filename": "untitled.pdf",
     })
 
 

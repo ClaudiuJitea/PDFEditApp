@@ -20,12 +20,24 @@
                 </div>
 
                 <p class="about-dialog-tagline">
-                    View, annotate, fill forms, redact, sign, and export PDF documents.
+                    A desktop PDF editor for viewing, annotating, filling forms, redacting, signing, and exporting documents.
                 </p>
 
-                <div class="about-dialog-footnote">
-                    <i data-lucide="folder" class="about-dialog-footnote-icon" aria-hidden="true"></i>
-                    <span id="about-data-dir" class="about-dialog-path">—</span>
+                <ul class="about-dialog-features">
+                    <li>Annotate and edit pages visually</li>
+                    <li>Fill forms, merge files, and manage bookmarks</li>
+                    <li>Export with passwords, page ranges, and flatten options</li>
+                </ul>
+
+                <div id="about-data-row" class="about-dialog-meta" hidden>
+                    <div class="about-dialog-meta-copy">
+                        <span class="about-dialog-meta-label">Application data</span>
+                        <span id="about-data-dir" class="about-dialog-path">—</span>
+                    </div>
+                    <button id="btn-about-open-data" class="about-dialog-meta-btn" type="button" title="Open application data folder">
+                        <i data-lucide="folder-open" class="btn-icon-sm"></i>
+                        <span>Open</span>
+                    </button>
                 </div>
             </div>
         </div>

@@ -11,6 +11,7 @@ if [[ ! -d "$VENV_DIR" ]]; then
   python3 -m venv "$VENV_DIR"
 fi
 
+"$VENV_DIR/bin/python" -m pip install --upgrade pip
 "$VENV_DIR/bin/pip" install -r "$BACKEND_DIR/requirements-dev.txt"
 mkdir -p "$DIST_DIR"
 

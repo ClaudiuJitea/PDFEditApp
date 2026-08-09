@@ -74,6 +74,8 @@ class App {
         this.dirtyPages = new Set();
         this._draftPersistTimer = null;
         this._SESSION_STORAGE_KEY = 'pdfedit-session';
+        this.documentFileName = null;
+        this.documentSavePath = null;
     }
 
     _draftStorageKey(sessionId) {
@@ -234,6 +236,7 @@ class App {
             zoomFit: document.getElementById('btn-zoom-fit'),
             zoom100: document.getElementById('btn-zoom-100'),
             btnSave: document.getElementById('btn-save'),
+            btnSaveAs: document.getElementById('btn-save-as'),
             btnDownload: document.getElementById('btn-download'),
             btnUpload: document.getElementById('btn-upload'),
             btnNew: document.getElementById('btn-new'),
@@ -338,6 +341,8 @@ class App {
             aboutModal: document.getElementById('about-modal'),
             aboutVersion: document.getElementById('about-version'),
             aboutDataDir: document.getElementById('about-data-dir'),
+            aboutDataRow: document.getElementById('about-data-row'),
+            btnAboutOpenData: document.getElementById('btn-about-open-data'),
             btnAboutClose: document.getElementById('btn-about-close'),
             quitModal: document.getElementById('quit-modal'),
             quitModalMessage: document.getElementById('quit-modal-message'),
@@ -398,7 +403,10 @@ class App {
         this.els.fileInput.addEventListener('change', (e) => this._onFileSelected(e));
         this.els.btnNew.addEventListener('click', () => this._showNewPdfModal());
         this.els.btnNewZone.addEventListener('click', () => this._showNewPdfModal());
-        this.els.btnSave.addEventListener('click', () => this._saveCurrentPage());
+        this.els.btnSave.addEventListener('click', () => this._save());
+        if (this.els.btnSaveAs) {
+            this.els.btnSaveAs.addEventListener('click', () => this._saveAs());
+        }
         this.els.btnDownload.addEventListener('click', () => this._showExportModal());
         if (this.els.btnMerge) {
             this.els.btnMerge.addEventListener('click', () => this.els.mergeFileInput.click());
@@ -762,7 +770,8 @@ class App {
                         return;
                     case 's':
                         e.preventDefault();
-                        this._saveCurrentPage();
+                        if (e.shiftKey) this._saveAs();
+                        else this._save();
                         return;
                     case 'o':
                         e.preventDefault();
@@ -928,7 +937,9 @@ class App {
         zone.addEventListener('drop', (e) => {
             const files = e.dataTransfer.files;
             if (files.length > 0 && files[0].type === 'application/pdf') {
-                this._uploadFile(files[0]);
+                this._uploadFile(files[0], null, {
+                    sourcePath: this._pathFromFile(files[0]),
+                });
             } else {
                 this._showToast('Please drop a PDF file', 'error');
             }
@@ -957,7 +968,9 @@ class App {
             const files = e.dataTransfer?.files;
             if (files && files.length > 0) {
                 if (files[0].type === 'application/pdf') {
-                    this._uploadFile(files[0]);
+                    this._uploadFile(files[0], null, {
+                        sourcePath: this._pathFromFile(files[0]),
+                    });
                 } else {
                     this._showToast('Please drop a PDF file', 'error');
                 }
@@ -984,12 +997,15 @@ class App {
             }
         }
         if (window.pdfEditDesktop?.openFile) {
-            const files = await window.pdfEditDesktop.openFile({
+            const entries = await window.pdfEditDesktop.openFile({
                 filters: [{ name: 'PDF', extensions: ['pdf'] }],
             });
-            const file = files && files[0];
-            if (file) {
-                this._uploadFile(file, null, { skipUnsavedCheck: true });
+            const entry = entries && entries[0];
+            if (entry?.file) {
+                this._uploadFile(entry.file, null, {
+                    skipUnsavedCheck: true,
+                    sourcePath: entry.path || null,
+                });
             }
             return;
         }
@@ -998,8 +1014,19 @@ class App {
 
     _onFileSelected(e) {
         const file = e.target.files[0];
-        if (file) this._uploadFile(file, null, { skipUnsavedCheck: true });
+        if (file) {
+            this._uploadFile(file, null, {
+                skipUnsavedCheck: true,
+                sourcePath: this._pathFromFile(file),
+            });
+        }
         e.target.value = '';
+    }
+
+    _pathFromFile(file) {
+        if (!file) return null;
+        const path = typeof file.path === 'string' ? file.path.trim() : '';
+        return path || null;
     }
 
     _markDirty() {
@@ -1137,6 +1164,7 @@ class App {
 
         const dirty = this._hasUnsavedChanges();
         const count = this._getDirtyPageNumbers().length;
+        const hasPath = Boolean(this.documentSavePath);
 
         btn.classList.toggle('has-unsaved', dirty && !this.isSaving);
 
@@ -1148,15 +1176,47 @@ class App {
 
         if (dirty && this.sessionId) {
             const pagesLabel = count > 1 ? `${count} pages` : 'this page';
-            btn.title = `Save unsaved changes on ${pagesLabel} (Ctrl+S)`;
-            btn.setAttribute(
-                'aria-label',
-                `Save, unsaved changes on ${count} page${count === 1 ? '' : 's'}`
-            );
-        } else {
+            if (hasPath) {
+                btn.title = `Save unsaved changes on ${pagesLabel} (Ctrl+S)`;
+                btn.setAttribute(
+                    'aria-label',
+                    `Save, unsaved changes on ${count} page${count === 1 ? '' : 's'}`
+                );
+            } else {
+                btn.title = `Save As… unsaved changes on ${pagesLabel} (Ctrl+S)`;
+                btn.setAttribute(
+                    'aria-label',
+                    `Save As, unsaved changes on ${count} page${count === 1 ? '' : 's'}`
+                );
+            }
+        } else if (hasPath) {
             btn.title = 'Save (Ctrl+S)';
             btn.setAttribute('aria-label', 'Save');
+        } else {
+            btn.title = 'Save As… (Ctrl+S)';
+            btn.setAttribute('aria-label', 'Save As');
         }
+    }
+
+    _setSaveButtonsEnabled(enabled) {
+        if (this.els.btnSave) this.els.btnSave.disabled = !enabled;
+        if (this.els.btnSaveAs) this.els.btnSaveAs.disabled = !enabled;
+    }
+
+    _setSaveButtonsBusy(busy, { label = 'Saving', activeButton = null } = {}) {
+        const buttons = [this.els.btnSave, this.els.btnSaveAs].filter(Boolean);
+        for (const btn of buttons) {
+            btn.disabled = busy || !this.sessionId;
+        }
+        if (!busy) return null;
+
+        const active = activeButton || this.els.btnSave;
+        if (!active) return null;
+        const originalHTML = active.innerHTML;
+        active.innerHTML = `<span class="spinner"></span><span>${label}</span>`;
+        return () => {
+            active.innerHTML = originalHTML;
+        };
     }
 
     _hasUnsavedChanges() {
@@ -1217,12 +1277,13 @@ class App {
         const choice = await this._promptUnsavedChanges(options);
         if (choice === 'cancel') return false;
         if (choice === 'save') {
-            return this._saveAllDirtyPages();
+            return this._save();
         }
         return true;
     }
 
-    async _saveAllDirtyPages() {
+    async _saveAllDirtyPages(options = {}) {
+        const { silent = false } = options;
         const pages = this._getDirtyPageNumbers();
         if (pages.length === 0) {
             this.isDirty = false;
@@ -1251,10 +1312,12 @@ class App {
         if (this.currentPage !== originalPage) {
             await this._goToPage(originalPage);
         }
-        this._showToast(
-            `Saved ${pages.length} page${pages.length === 1 ? '' : 's'}`,
-            'success'
-        );
+        if (!silent) {
+            this._showToast(
+                `Saved ${pages.length} page${pages.length === 1 ? '' : 's'}`,
+                'success'
+            );
+        }
         this._updateSaveUnsavedIndicator();
         return true;
     }
@@ -1266,6 +1329,8 @@ class App {
                 sessionId: this.sessionId,
                 currentPage: this.currentPage,
                 pageCount: this.pageCount,
+                documentSavePath: this.documentSavePath || null,
+                documentFileName: this.documentFileName || null,
                 updatedAt: Date.now(),
             }));
         } catch (err) {
@@ -1351,6 +1416,8 @@ class App {
                 deleteOldSession: false,
                 clearDraft: false,
                 skipInitialLoad: true,
+                sourcePath: stored.documentSavePath || null,
+                originalFilename: stored.documentFileName || data.original_filename || null,
             });
 
             if (draft) {
@@ -1379,7 +1446,7 @@ class App {
     }
 
     async _uploadFile(file, password = null, options = {}) {
-        const { skipUnsavedCheck = false } = options;
+        const { skipUnsavedCheck = false, sourcePath = null } = options;
         if (!skipUnsavedCheck && !(await this._proceedPastUnsaved({
             message: 'You have unsaved changes. Save them before opening another file?',
         }))) {
@@ -1399,11 +1466,15 @@ class App {
             this._showToast('Uploading PDF...', 'success');
             const data = await API.uploadPDF(file, password);
             this._hidePasswordModal();
-            this._initSession(data);
+            this._initSession(data, {
+                sourcePath: sourcePath || this._pathFromFile(file),
+                originalFilename: file.name || data.original_filename || null,
+            });
             this._showToast('PDF loaded successfully', 'success');
         } catch (err) {
             if (err.passwordRequired) {
                 this._pendingUploadFile = file;
+                this._pendingUploadSourcePath = sourcePath || this._pathFromFile(file);
                 this._showPasswordModal();
                 return;
             }
@@ -1421,6 +1492,7 @@ class App {
     _hidePasswordModal() {
         if (this.els.passwordModal) this.els.passwordModal.style.display = 'none';
         this._pendingUploadFile = null;
+        this._pendingUploadSourcePath = null;
     }
 
     async _confirmPasswordUpload() {
@@ -1430,7 +1502,9 @@ class App {
             this._showToast('Enter a password', 'error');
             return;
         }
-        await this._uploadFile(file, password);
+        const sourcePath = this._pendingUploadSourcePath || null;
+        this._pendingUploadSourcePath = null;
+        await this._uploadFile(file, password, { sourcePath, skipUnsavedCheck: true });
     }
 
     _initDesktopControls() {
@@ -1439,27 +1513,48 @@ class App {
         this.els.btnAboutClose?.addEventListener('click', () => this._hideAboutModal());
         this.els.btnQuitCancel?.addEventListener('click', () => this._hideQuitModal());
         this.els.btnQuitConfirm?.addEventListener('click', () => this._confirmQuit());
+        this.els.btnAboutOpenData?.addEventListener('click', () => this._openAboutDataDir());
         this.els.aboutModal?.querySelector('.modal-backdrop')?.addEventListener('click', () => this._hideAboutModal());
         this.els.quitModal?.querySelector('.modal-backdrop')?.addEventListener('click', () => this._hideQuitModal());
     }
 
     async _showAboutModal() {
         if (!this.els.aboutModal) return;
+        const dataRow = this.els.aboutDataRow;
         if (!window.pdfEditDesktop?.getAppInfo) {
-            this.els.aboutVersion.textContent = 'Version 1.0.0';
-            this.els.aboutDataDir.textContent = 'Desktop mode only';
+            if (this.els.aboutVersion) this.els.aboutVersion.textContent = 'Version 1.0.0';
+            if (this.els.aboutDataDir) this.els.aboutDataDir.textContent = '—';
+            if (dataRow) dataRow.hidden = true;
         } else {
             try {
                 const info = await window.pdfEditDesktop.getAppInfo();
-                this.els.aboutVersion.textContent = `Version ${info.version || '1.0.0'}`;
-                this.els.aboutDataDir.textContent = info.dataDir || '—';
+                if (this.els.aboutVersion) {
+                    this.els.aboutVersion.textContent = `Version ${info.version || '1.0.0'}`;
+                }
+                if (this.els.aboutDataDir) {
+                    this.els.aboutDataDir.textContent = info.dataDir || '—';
+                }
+                this._aboutDataDir = info.dataDir || null;
+                if (dataRow) dataRow.hidden = !info.dataDir;
             } catch (_) {
-                this.els.aboutVersion.textContent = 'Version 1.0.0';
-                this.els.aboutDataDir.textContent = '—';
+                if (this.els.aboutVersion) this.els.aboutVersion.textContent = 'Version 1.0.0';
+                if (this.els.aboutDataDir) this.els.aboutDataDir.textContent = '—';
+                this._aboutDataDir = null;
+                if (dataRow) dataRow.hidden = true;
             }
         }
         this.els.aboutModal.style.display = 'flex';
         if (typeof lucide !== 'undefined') lucide.createIcons({ nodes: [this.els.aboutModal] });
+    }
+
+    async _openAboutDataDir() {
+        const target = this._aboutDataDir;
+        if (!target || !window.pdfEditDesktop?.openPath) return;
+        try {
+            await window.pdfEditDesktop.openPath(target);
+        } catch (err) {
+            this._showToast(err.message || 'Could not open folder', 'error');
+        }
     }
 
     _hideAboutModal() {
@@ -1541,6 +1636,8 @@ class App {
         this.isLoading = false;
         this.isSaving = false;
         this.documentMode = false;
+        this.documentFileName = null;
+        this.documentSavePath = null;
         this.searchResults = [];
         this.searchIndex = 0;
         this.pageLinks = [];
@@ -1573,6 +1670,7 @@ class App {
         this.els.pageCountBadge.style.display = 'none';
 
         this.els.btnSave.disabled = true;
+        if (this.els.btnSaveAs) this.els.btnSaveAs.disabled = true;
         this.els.btnDownload.disabled = true;
         if (this.els.btnMerge) this.els.btnMerge.disabled = true;
         if (this.els.btnDocument) this.els.btnDocument.disabled = true;
@@ -1619,6 +1717,8 @@ class App {
             clearDraft = true,
             skipInitialLoad = false,
             initialPage = 0,
+            sourcePath = null,
+            originalFilename = null,
         } = options;
         const oldSessionId = this.sessionId;
 
@@ -1641,12 +1741,15 @@ class App {
         this.thumbnails = {};
         this.selectedFormXref = null;
         this.isDirty = false;
+        this.documentFileName = originalFilename || data.original_filename || 'document.pdf';
+        this.documentSavePath = sourcePath || null;
         this.formLayer.clear();
         this._updateSaveUnsavedIndicator();
 
         this.els.uploadZone.style.display = 'none';
         this.els.editorContainer.style.display = 'flex';
         this.els.btnSave.disabled = false;
+        if (this.els.btnSaveAs) this.els.btnSaveAs.disabled = false;
         this.els.btnDownload.disabled = false;
         if (this.els.btnMerge) this.els.btnMerge.disabled = false;
         if (this.els.btnDocument) this.els.btnDocument.disabled = false;
@@ -2024,9 +2127,13 @@ class App {
         const { silent = false } = options;
         this.isSaving = true;
         this._updateSaveUnsavedIndicator();
-        this.els.btnSave.disabled = true;
-        const originalHTML = this.els.btnSave.innerHTML;
-        this.els.btnSave.innerHTML = '<span class="spinner"></span><span>Saving</span>';
+
+        let originalHTML = null;
+        if (!silent && this.els.btnSave) {
+            this._setSaveButtonsEnabled(false);
+            originalHTML = this.els.btnSave.innerHTML;
+            this.els.btnSave.innerHTML = '<span class="spinner"></span><span>Saving</span>';
+        }
 
         try {
             const elements = this.editor.getObjects();
@@ -2051,10 +2158,7 @@ class App {
             this.isDirty = false;
             void this._persistDraft();
             if (!silent) {
-                this._showToast(
-                    result.saved_path ? 'Page saved to data/saved' : 'Page saved',
-                    'success',
-                );
+                this._showToast('Page saved', 'success');
             }
             return true;
         } catch (err) {
@@ -2062,16 +2166,138 @@ class App {
             return false;
         } finally {
             this.isSaving = false;
-            this.els.btnSave.disabled = false;
-            this.els.btnSave.innerHTML = originalHTML;
+            if (!silent && this.els.btnSave && originalHTML != null) {
+                this.els.btnSave.innerHTML = originalHTML;
+                this._setSaveButtonsEnabled(Boolean(this.sessionId));
+                lucide.createIcons();
+            }
+            this._updateSaveUnsavedIndicator();
+        }
+    }
+
+    async _save() {
+        // Overwrite the opened file when we know its path; otherwise fall back to Save As.
+        if (this.documentSavePath) {
+            return this._saveDocument({ mode: 'save' });
+        }
+        return this._saveAs();
+    }
+
+    async _saveAs() {
+        return this._saveDocument({ mode: 'save-as' });
+    }
+
+    async _saveDocument(options = {}) {
+        if (this.isSaving || !this.sessionId) return false;
+        const mode = options.mode || (options.forceDialog ? 'save-as' : 'save');
+        const forceDialog = mode === 'save-as';
+        const overwritePath = !forceDialog ? this.documentSavePath : null;
+
+        if (!forceDialog && !overwritePath) {
+            return this._saveAs();
+        }
+
+        const dirtySnapshot = new Set(this.dirtyPages);
+        const wasDirty = this.isDirty;
+        const restoreBusy = this._setSaveButtonsBusy(true, {
+            label: forceDialog ? 'Saving As' : 'Saving',
+            activeButton: forceDialog ? this.els.btnSaveAs : this.els.btnSave,
+        });
+
+        try {
+            const pagesOk = await this._saveAllDirtyPages({ silent: true });
+            if (!pagesOk) return false;
+
+            const currentOk = await this._saveCurrentPage({ silent: true });
+            if (!currentOk) return false;
+
+            const blob = await API.exportPDF(this.sessionId, {});
+            const suggestedName = this._suggestSaveFileName();
+            const dialogDefault = forceDialog
+                ? (this.documentSavePath || suggestedName)
+                : suggestedName;
+            const result = await this._writePdfBlob(blob, dialogDefault, {
+                filePath: overwritePath,
+            });
+
+            if (!result || result.canceled) {
+                this.dirtyPages = dirtySnapshot;
+                this.isDirty = wasDirty || dirtySnapshot.size > 0;
+                this._updateSaveUnsavedIndicator();
+                return false;
+            }
+
+            if (result.filePath) {
+                this.documentSavePath = result.filePath;
+                this.documentFileName = result.filePath.split(/[/\\]/).pop() || suggestedName;
+            } else if (!this.documentFileName) {
+                this.documentFileName = suggestedName;
+            }
+            this._persistSessionMeta();
+
+            this._showToast(
+                mode === 'save-as'
+                    ? `Saved as ${this.documentFileName}`
+                    : `Saved ${this.documentFileName}`,
+                'success',
+            );
+            return true;
+        } catch (err) {
+            this.dirtyPages = dirtySnapshot;
+            this.isDirty = wasDirty || dirtySnapshot.size > 0;
+            this._showToast(err.message || 'Save failed', 'error');
+            return false;
+        } finally {
+            if (typeof restoreBusy === 'function') restoreBusy();
+            this._setSaveButtonsEnabled(Boolean(this.sessionId));
             lucide.createIcons();
             this._updateSaveUnsavedIndicator();
         }
     }
 
+    _suggestSaveFileName() {
+        const name = this.documentFileName || 'document.pdf';
+        return name.toLowerCase().endsWith('.pdf') ? name : `${name}.pdf`;
+    }
+
+    async _writePdfBlob(blob, filename, options = {}) {
+        const { filePath = null } = options;
+        if (window.pdfEditDesktop?.saveFile) {
+            const result = await window.pdfEditDesktop.saveFile(blob, filename, {
+                filePath,
+                filters: [
+                    { name: 'PDF', extensions: ['pdf'] },
+                    { name: 'All Files', extensions: ['*'] },
+                ],
+            });
+            if (result === true) {
+                return { ok: true, canceled: false, filePath: filePath || null };
+            }
+            if (result === false) {
+                return { ok: false, canceled: true, filePath: null };
+            }
+            return result;
+        }
+
+        this._downloadBlobBrowser(blob, filename);
+        return { ok: true, canceled: false, filePath: null };
+    }
+
     _downloadBlob(blob, filename) {
         if (window.pdfEditDesktop?.saveFile) {
-            window.pdfEditDesktop.saveFile(blob, filename).catch((err) => {
+            window.pdfEditDesktop.saveFile(blob, filename, {
+                filters: filename.toLowerCase().endsWith('.zip')
+                    ? [
+                        { name: 'ZIP', extensions: ['zip'] },
+                        { name: 'All Files', extensions: ['*'] },
+                    ]
+                    : filename.toLowerCase().endsWith('.pdf')
+                        ? [
+                            { name: 'PDF', extensions: ['pdf'] },
+                            { name: 'All Files', extensions: ['*'] },
+                        ]
+                        : null,
+            }).catch((err) => {
                 console.error('Native save failed, falling back to browser download:', err);
                 this._downloadBlobBrowser(blob, filename);
             });
@@ -2131,7 +2357,7 @@ class App {
             const blob = await API.exportPDF(this.sessionId, options);
             const filename = options.split_pages ? 'pages.zip' : 'edited.pdf';
             this._downloadBlob(blob, filename);
-            this._showToast(options.split_pages ? 'ZIP downloaded' : 'PDF downloaded', 'success');
+            this._showToast(options.split_pages ? 'ZIP exported' : 'PDF exported', 'success');
         } catch (err) {
             this._showToast(err.message, 'error');
         } finally {

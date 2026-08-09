@@ -27,5 +27,10 @@
   "devDependencies": {
     "electron": "^43.3.0",
     "electron-builder": "^26.15.3"
+  },
+  "overrides": {
+    "@electron/asar": "^4.2.1",
+    "@electron/get": "^5.1.0",
+    "temp": "file:vendor/temp-shim"
   }
 }

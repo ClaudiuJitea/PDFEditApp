@@ -145,19 +145,46 @@ ipcMain.handle('desktop:open-file', async (_event, options = {}) => {
       name: path.basename(filePath),
       type: 'application/pdf',
       data: buffer,
+      path: filePath,
     };
   });
 });
-ipcMain.handle('desktop:save-file', async (_event, payload) => {
-  const { defaultPath, data, mimeType } = payload;
-  const result = await dialog.showSaveDialog(mainWindow, {
+ipcMain.handle('desktop:save-file', async (_event, payload = {}) => {
+  const {
     defaultPath,
-    filters: [{ name: 'All Files', extensions: ['*'] }],
-  });
-  if (result.canceled || !result.filePath) return false;
+    data,
+    filePath: existingPath,
+    filters,
+  } = payload;
+
+  let targetPath = existingPath || null;
+  if (!targetPath) {
+    const result = await dialog.showSaveDialog(mainWindow, {
+      defaultPath: defaultPath || 'document.pdf',
+      filters: filters || [
+        { name: 'PDF', extensions: ['pdf'] },
+        { name: 'All Files', extensions: ['*'] },
+      ],
+    });
+    if (result.canceled || !result.filePath) {
+      return { ok: false, canceled: true, filePath: null };
+    }
+    targetPath = result.filePath;
+  }
+
   const buffer = Buffer.from(data);
-  fs.writeFileSync(result.filePath, buffer);
+  fs.writeFileSync(targetPath, buffer);
+  return { ok: true, canceled: false, filePath: targetPath };
+});
+ipcMain.handle('desktop:show-item-in-folder', async (_event, targetPath) => {
+  if (!targetPath || typeof targetPath !== 'string') return false;
+  shell.showItemInFolder(targetPath);
   return true;
+});
+ipcMain.handle('desktop:open-path', async (_event, targetPath) => {
+  if (!targetPath || typeof targetPath !== 'string') return false;
+  const err = await shell.openPath(targetPath);
+  return !err;
 });
 ipcMain.handle('desktop:open-external', async (_event, url) => {
   await shell.openExternal(url);

@@ -1,0 +1,7 @@
+{
+  "name": "temp",
+  "version": "0.9.4-shim",
+  "description": "Minimal temp replacement using Node fs APIs (avoids deprecated rimraf)",
+  "main": "index.js",
+  "license": "MIT"
+}

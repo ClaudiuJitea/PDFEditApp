@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PDFEdit — PDF Editor</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='vendor/fonts/fonts.css') }}?v=1.0.0">
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=1.0.12">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}?v=1.0.15">
     <script src="{{ url_for('static', filename='vendor/fabric/fabric.min.js') }}?v=5.3.1"></script>
     <script src="{{ url_for('static', filename='vendor/lucide/lucide.min.js') }}?v=0.468.0"></script>
     <style>
@@ -22,78 +22,91 @@
         <!-- Top Bar -->
         <header class="top-bar">
             <div class="top-bar-left">
-                <div class="brand">
-                    <svg class="brand-icon" width="28" height="28" viewBox="0 0 36 36" fill="none" aria-hidden="true">
-                        <rect x="1.5" y="1.5" width="33" height="33" rx="8" fill="var(--color-surface)" stroke="var(--color-primary)" stroke-width="1.5"/>
-                        <path d="M11 8.5H19L24 13.5V26.5C24 27.3284 23.3284 28 22.5 28H11C10.1716 28 9.5 27.3284 9.5 26.5V10C9.5 9.17157 10.1716 8.5 11 8.5Z" fill="var(--color-surface-2)" stroke="var(--color-primary)" stroke-width="1.5" stroke-linejoin="round"/>
-                        <path d="M19 8.5V13.5H24" stroke="var(--color-primary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M14 22.6L21.8 14.8C22.3862 14.2138 23.3369 14.2138 23.9231 14.8C24.5093 15.3862 24.5093 16.3369 23.9231 16.9231L16.1 24.7L12.8 25.4L13.5 22.1Z" fill="var(--color-surface)" stroke="var(--color-primary)" stroke-width="1.5" stroke-linejoin="round"/>
-                        <path d="M19.9 16.7L22 18.8" stroke="var(--color-primary)" stroke-width="1.5" stroke-linecap="round"/>
-                    </svg>
+                <div class="brand" title="PDFEdit">
+                    <span class="brand-mark" aria-hidden="true">
+                        <svg class="brand-icon" width="28" height="28" viewBox="0 0 36 36" fill="none">
+                            <rect x="1.5" y="1.5" width="33" height="33" rx="8" fill="var(--color-surface)" stroke="var(--color-primary)" stroke-width="1.5"/>
+                            <path d="M11 8.5H19L24 13.5V26.5C24 27.3284 23.3284 28 22.5 28H11C10.1716 28 9.5 27.3284 9.5 26.5V10C9.5 9.17157 10.1716 8.5 11 8.5Z" fill="var(--color-surface-2)" stroke="var(--color-primary)" stroke-width="1.5" stroke-linejoin="round"/>
+                            <path d="M19 8.5V13.5H24" stroke="var(--color-primary)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M14 22.6L21.8 14.8C22.3862 14.2138 23.3369 14.2138 23.9231 14.8C24.5093 15.3862 24.5093 16.3369 23.9231 16.9231L16.1 24.7L12.8 25.4L13.5 22.1Z" fill="var(--color-surface)" stroke="var(--color-primary)" stroke-width="1.5" stroke-linejoin="round"/>
+                            <path d="M19.9 16.7L22 18.8" stroke="var(--color-primary)" stroke-width="1.5" stroke-linecap="round"/>
+                        </svg>
+                    </span>
                     <span class="brand-text">PDFEdit</span>
                 </div>
                 <div class="top-bar-actions">
-                    <button id="btn-upload" class="top-btn" title="Open PDF (Ctrl+O)">
-                        <i data-lucide="upload" class="btn-icon"></i>
-                        <span>Open</span>
-                    </button>
-                    <button id="btn-new" class="top-btn" title="New blank PDF">
-                        <i data-lucide="file-plus" class="btn-icon"></i>
-                        <span>New</span>
-                    </button>
-                    <span class="top-bar-sep"></span>
-                    <button id="btn-save" class="top-btn top-btn-accent save-btn" title="Save (Ctrl+S)" disabled aria-label="Save">
-                        <i data-lucide="save" class="btn-icon"></i>
-                        <span class="save-btn-label">Save</span>
-                    </button>
-                    <button id="btn-download" class="top-btn top-btn-accent" title="Download PDF" disabled>
-                        <i data-lucide="download" class="btn-icon"></i>
-                        <span>Download</span>
-                    </button>
-                    <button id="btn-merge" class="top-btn" title="Merge another PDF" disabled>
-                        <i data-lucide="files" class="btn-icon"></i>
-                        <span>Merge</span>
-                    </button>
-                    <button id="btn-document" class="top-btn" title="Document metadata & bookmarks" disabled>
-                        <i data-lucide="book-open" class="btn-icon"></i>
-                        <span>Document</span>
-                    </button>
-                    <button id="btn-close" class="top-btn top-btn-danger" title="Close document (Ctrl+W)" disabled>
-                        <i data-lucide="file-x" class="btn-icon"></i>
-                        <span>Close</span>
-                    </button>
-                    <span class="top-bar-sep"></span>
-                    <button id="btn-undo" class="top-btn icon-only" title="Undo (Ctrl+Z)" disabled>
-                        <i data-lucide="undo-2" class="btn-icon"></i>
-                    </button>
-                    <button id="btn-redo" class="top-btn icon-only" title="Redo (Ctrl+Y)" disabled>
-                        <i data-lucide="redo-2" class="btn-icon"></i>
-                    </button>
+                    <div class="top-btn-group" role="group" aria-label="File">
+                        <button id="btn-upload" class="top-btn" title="Open PDF (Ctrl+O)">
+                            <i data-lucide="folder-open" class="btn-icon"></i>
+                            <span>Open</span>
+                        </button>
+                        <button id="btn-new" class="top-btn" title="New blank PDF">
+                            <i data-lucide="file-plus" class="btn-icon"></i>
+                            <span>New</span>
+                        </button>
+                    </div>
+                    <div class="top-btn-group" role="group" aria-label="Document">
+                        <button id="btn-save" class="top-btn top-btn-accent save-btn" title="Save (Ctrl+S)" disabled aria-label="Save">
+                            <i data-lucide="save" class="btn-icon"></i>
+                            <span class="save-btn-label">Save</span>
+                        </button>
+                        <button id="btn-save-as" class="top-btn" title="Save As (Ctrl+Shift+S)" disabled aria-label="Save As">
+                            <i data-lucide="folder-output" class="btn-icon"></i>
+                            <span>Save As</span>
+                        </button>
+                        <button id="btn-download" class="top-btn" title="Export PDF" disabled>
+                            <i data-lucide="file-output" class="btn-icon"></i>
+                            <span>Export</span>
+                        </button>
+                        <button id="btn-merge" class="top-btn" title="Merge another PDF" disabled>
+                            <i data-lucide="files" class="btn-icon"></i>
+                            <span>Merge</span>
+                        </button>
+                        <button id="btn-document" class="top-btn" title="Document metadata & bookmarks" disabled>
+                            <i data-lucide="book-open" class="btn-icon"></i>
+                            <span>Document</span>
+                        </button>
+                        <button id="btn-close" class="top-btn top-btn-quiet-danger" title="Close document (Ctrl+W)" disabled>
+                            <i data-lucide="file-x" class="btn-icon"></i>
+                            <span>Close</span>
+                        </button>
+                    </div>
+                    <div class="top-btn-group top-btn-group-icons" role="group" aria-label="History">
+                        <button id="btn-undo" class="top-btn icon-only" title="Undo (Ctrl+Z)" disabled>
+                            <i data-lucide="undo-2" class="btn-icon"></i>
+                        </button>
+                        <button id="btn-redo" class="top-btn icon-only" title="Redo (Ctrl+Y)" disabled>
+                            <i data-lucide="redo-2" class="btn-icon"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
             <div class="top-bar-right">
                 <span id="page-count-badge" class="page-count" style="display:none">
                     <span id="page-count-text">0 pages</span>
                 </span>
-                <button id="btn-ai-assistant" class="top-btn" title="AI Assistant" disabled>
-                    <i data-lucide="sparkles" class="btn-icon"></i>
-                    <span>AI</span>
-                </button>
-                <button id="btn-ai-settings" class="top-btn icon-only" title="AI Settings (OpenRouter)">
-                    <i data-lucide="settings" class="btn-icon"></i>
-                </button>
-                <button id="btn-theme" class="top-btn icon-only" title="Toggle theme">
-                    <i data-lucide="sun" class="btn-icon theme-icon-light"></i>
-                    <i data-lucide="moon" class="btn-icon theme-icon-dark"></i>
-                </button>
-                <span class="top-bar-sep"></span>
-                <button id="btn-about" class="top-btn icon-only" title="About PDFEdit">
-                    <i data-lucide="info" class="btn-icon"></i>
-                </button>
-                <button id="btn-quit" class="top-btn top-btn-danger" title="Quit PDFEdit">
-                    <i data-lucide="log-out" class="btn-icon"></i>
-                    <span>Quit</span>
-                </button>
+                <div class="top-btn-group" role="group" aria-label="Tools">
+                    <button id="btn-ai-assistant" class="top-btn" title="AI Assistant" disabled>
+                        <i data-lucide="sparkles" class="btn-icon"></i>
+                        <span>AI</span>
+                    </button>
+                    <button id="btn-ai-settings" class="top-btn icon-only" title="AI Settings (OpenRouter)">
+                        <i data-lucide="settings" class="btn-icon"></i>
+                    </button>
+                    <button id="btn-theme" class="top-btn icon-only" title="Toggle theme">
+                        <i data-lucide="sun" class="btn-icon theme-icon-light"></i>
+                        <i data-lucide="moon" class="btn-icon theme-icon-dark"></i>
+                    </button>
+                </div>
+                <div class="top-btn-group top-btn-group-icons" role="group" aria-label="App">
+                    <button id="btn-about" class="top-btn icon-only" title="About PDFEdit">
+                        <i data-lucide="info" class="btn-icon"></i>
+                    </button>
+                    <button id="btn-quit" class="top-btn top-btn-quiet-danger" title="Quit PDFEdit">
+                        <i data-lucide="log-out" class="btn-icon"></i>
+                        <span>Quit</span>
+                    </button>
+                </div>
             </div>
         </header>
 
@@ -1364,7 +1377,7 @@
                 </div>
                 <div class="modal-actions">
                     <button id="btn-cancel-export" class="modal-btn cancel" type="button">Cancel</button>
-                    <button id="btn-confirm-export" class="modal-btn confirm" type="button">Download</button>
+                    <button id="btn-confirm-export" class="modal-btn confirm" type="button">Export</button>
                 </div>
             </div>
         </div>
@@ -1873,12 +1886,24 @@
                 </div>
 
                 <p class="about-dialog-tagline">
-                    View, annotate, fill forms, redact, sign, and export PDF documents.
+                    A desktop PDF editor for viewing, annotating, filling forms, redacting, signing, and exporting documents.
                 </p>
 
-                <div class="about-dialog-footnote">
-                    <i data-lucide="folder" class="about-dialog-footnote-icon" aria-hidden="true"></i>
-                    <span id="about-data-dir" class="about-dialog-path">—</span>
+                <ul class="about-dialog-features">
+                    <li>Annotate and edit pages visually</li>
+                    <li>Fill forms, merge files, and manage bookmarks</li>
+                    <li>Export with passwords, page ranges, and flatten options</li>
+                </ul>
+
+                <div id="about-data-row" class="about-dialog-meta" hidden>
+                    <div class="about-dialog-meta-copy">
+                        <span class="about-dialog-meta-label">Application data</span>
+                        <span id="about-data-dir" class="about-dialog-path">—</span>
+                    </div>
+                    <button id="btn-about-open-data" class="about-dialog-meta-btn" type="button" title="Open application data folder">
+                        <i data-lucide="folder-open" class="btn-icon-sm"></i>
+                        <span>Open</span>
+                    </button>
                 </div>
             </div>
         </div>

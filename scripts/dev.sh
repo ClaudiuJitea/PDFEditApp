@@ -7,6 +7,7 @@ VENV_DIR="$BACKEND_DIR/.venv"
 
 if [[ ! -d "$VENV_DIR" ]]; then
   python3 -m venv "$VENV_DIR"
+  "$VENV_DIR/bin/python" -m pip install --upgrade pip
   "$VENV_DIR/bin/pip" install -r "$BACKEND_DIR/requirements.txt"
 fi
 

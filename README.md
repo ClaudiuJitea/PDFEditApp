@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/banner_mock.png" alt="PDFEdit Banner" width="100%">
+  <img src="images/1.png" alt="PDFEdit Desktop screenshot" width="100%">
 </p>
 
 <h1 align="center">PDFEdit Desktop</h1>
@@ -32,8 +32,9 @@ Open PDFs, annotate, fill forms, redact, sign, run OCR, detect tables, and expor
 ### Advanced Document Lifecycle
 * **Drag-and-drop uploads** for PDFs up to 50MB, with password-protected document support.
 * **Create blank PDFs** from presets (`A4`, `Letter`, `Legal`, `A3`, `A5`) or custom dimensions.
-* **Session storage on disk** under your OS user-data directory, with draft recovery after crashes or restarts.
+* **Save** overwrites the opened file; **Save As** chooses a new location via the native dialog.
 * **Export** with flattening, page ranges, split-to-ZIP, and optional encryption passwords.
+* **Session drafts** under your OS user-data directory for recovery after crashes or restarts.
 
 ### Precise Annotations & Visual Edits
 * Move, scale, rotate, and delete PDF-origin elements; deletions become true redactions on save.
@@ -54,7 +55,7 @@ Open PDFs, annotate, fill forms, redact, sign, run OCR, detect tables, and expor
 * Table detection with CSV export.
 
 ### Desktop Integration
-* Native **open/save** dialogs for PDFs and exports.
+* Native **Open**, **Save**, **Save As**, and **Export** dialogs.
 * In-app **About** and **Quit** controls with themed modals.
 * Loopback-only API with per-launch authentication token.
 * Works fully offline (AI features still require network when enabled).
@@ -66,7 +67,9 @@ Open PDFs, annotate, fill forms, redact, sign, run OCR, detect tables, and expor
 | Shortcut | Action |
 |:---|:---|
 | <kbd>Ctrl</kbd> + <kbd>O</kbd> / <kbd>Cmd</kbd> + <kbd>O</kbd> | Open PDF |
-| <kbd>Ctrl</kbd> + <kbd>S</kbd> / <kbd>Cmd</kbd> + <kbd>S</kbd> | Save current page |
+| <kbd>Ctrl</kbd> + <kbd>S</kbd> / <kbd>Cmd</kbd> + <kbd>S</kbd> | Save (overwrite opened file, or Save As if untitled) |
+| <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd> / <kbd>Cmd</kbd> + <kbd>Shift</kbd> + <kbd>S</kbd> | Save As |
+| <kbd>Ctrl</kbd> + <kbd>W</kbd> / <kbd>Cmd</kbd> + <kbd>W</kbd> | Close document |
 | <kbd>Ctrl</kbd> + <kbd>Z</kbd> / <kbd>Cmd</kbd> + <kbd>Z</kbd> | Undo |
 | <kbd>Ctrl</kbd> + <kbd>Y</kbd> / <kbd>Cmd</kbd> + <kbd>Y</kbd> | Redo |
 | <kbd>V</kbd> | Select tool |
@@ -112,7 +115,9 @@ PDFEditApp/
 ├── build/             # Packaging scripts and configs
 ├── scripts/           # Dev and sync helpers
 ├── tests/             # Backend and desktop tests
-├── assets/            # Banner and app icons
+├── assets/            # App icons and legacy banner assets
+├── images/            # README screenshots
+├── vendor/            # Local dependency shims
 ├── package.json       # Electron dependencies
 └── README.md
 ```
@@ -140,7 +145,7 @@ chmod +x PDFEdit-*.AppImage
 
 #### Prerequisites
 
-* **Node.js 20+** and **npm**
+* **Node.js 22.12+** and **npm**
 * **Python 3.11+**
 * **Linux build tools** for PyInstaller (e.g. `build-essential`)
 * Optional: **Tesseract** and **OpenSSL** on PATH (or use `build/fetch-native-tools.sh` to link system binaries)
@@ -157,6 +162,7 @@ cd PDFEditApp
 ```bash
 npm install
 python3 -m venv backend/.venv
+backend/.venv/bin/python -m pip install --upgrade pip
 backend/.venv/bin/pip install -r backend/requirements.txt
 bash build/fetch-native-tools.sh
 ```
@@ -196,10 +202,10 @@ npm run build:desktop
 
 ## Runtime Data
 
-User documents, drafts, exports, and AI settings are stored outside the install directory:
+Drafts, working copies, and AI settings are stored outside the install directory. Document **Save** / **Save As** write to the location you choose.
 
-| OS | Location |
-|----|----------|
+| OS | Application data |
+|----|------------------|
 | Windows | `%APPDATA%/PDFEdit` |
 | macOS | `~/Library/Application Support/PDFEdit` |
 | Linux | `~/.local/share/pdfedit` or `~/.config/PDFEdit` |
