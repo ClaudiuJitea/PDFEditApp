@@ -1,6 +1,5 @@
 appId: com.pdfedit.desktop
 productName: PDFEdit
-publish: never
 directories:
   output: dist/desktop
   buildResources: assets
