@@ -3294,45 +3294,75 @@ def save_page(session_id, page_num):
     if form_updates:
         page = apply_form_updates(doc, page_num, form_updates)
 
+    # (rect, cover) — cover=True paints a fill (OCR/scan masks). cover=False removes
+    # text only so underlying vector backgrounds (colored headers, bars) stay intact.
     areas_to_redact = []
 
     for orig in deleted_originals:
         pdf_bbox = orig.get("pdf_bbox")
         if pdf_bbox and len(pdf_bbox) == 4:
-            areas_to_redact.append(fitz.Rect(pdf_bbox))
+            orig_type = (orig.get("type") or "").lower()
+            cover = orig_type in ("ocr_mask", "image", "cover") or bool(orig.get("cover"))
+            areas_to_redact.append((fitz.Rect(pdf_bbox), cover))
 
     new_elements = []
     for elem in elements:
         if elem.get("origin") == "pdf":
             orig_bbox = elem.get("originalPdfBbox") or elem.get("pdf_bbox")
             if orig_bbox and len(orig_bbox) == 4:
-                areas_to_redact.append(fitz.Rect(orig_bbox))
+                areas_to_redact.append((fitz.Rect(orig_bbox), False))
 
         etype = elem.get("type", "rect")
         if etype in ("text", "textbox"):
             try:
                 text_rect = fitz.Rect(resolve_elem_pdf_bbox(page, elem, 200, 40))
                 if not text_rect.is_empty:
-                    areas_to_redact.append(expand_text_redact_rect(page, text_rect))
+                    areas_to_redact.append((expand_text_redact_rect(page, text_rect), False))
             except Exception:
                 pass
 
         new_elements.append(elem)
 
-    page_fill = _page_background_pdf_fill(page)
+    redact_jobs = []
+    for area, cover in areas_to_redact:
+        if area.is_empty:
+            continue
+        if cover:
+            try:
+                fill = _pdf_fill_for_rect(page, area)
+            except Exception:
+                fill = _page_background_pdf_fill(page)
+            redact_jobs.append((area, fill))
+        else:
+            # No painted patch — keeps exact original header/bar colors.
+            redact_jobs.append((area, False))
 
-    for area in areas_to_redact:
-        if not area.is_empty:
-            page.add_redact_annot(area, fill=page_fill)
+    for area, fill in redact_jobs:
+        page.add_redact_annot(area, fill=fill)
 
-    if areas_to_redact:
+    if redact_jobs:
         try:
-            page.apply_redactions(images=fitz.PDF_REDACT_IMAGE_NONE)
+            page.apply_redactions(
+                images=fitz.PDF_REDACT_IMAGE_NONE,
+                graphics=fitz.PDF_REDACT_LINE_ART_NONE,
+                text=fitz.PDF_REDACT_TEXT_REMOVE,
+            )
+        except TypeError:
+            try:
+                page.apply_redactions(images=fitz.PDF_REDACT_IMAGE_NONE, graphics=0)
+            except Exception:
+                try:
+                    page.apply_redactions()
+                except Exception:
+                    pass
         except Exception:
             try:
-                page.apply_redactions()
+                page.apply_redactions(images=fitz.PDF_REDACT_IMAGE_NONE, graphics=0)
             except Exception:
-                pass
+                try:
+                    page.apply_redactions()
+                except Exception:
+                    pass
 
     redactions = []
     highlights = []

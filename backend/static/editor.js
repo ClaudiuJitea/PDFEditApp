@@ -1760,11 +1760,11 @@ class PDFEditor {
                     (br.top + br.height) / scale,
                 ];
             }
-            areas.push({ pdf_bbox: pdfBbox });
+            areas.push({ pdf_bbox: pdfBbox, type: 'ocr_mask', cover: true });
         });
 
         for (const mask of this._deletedOcrMasks) {
-            areas.push({ pdf_bbox: mask.pdf_bbox });
+            areas.push({ pdf_bbox: mask.pdf_bbox, type: 'ocr_mask', cover: true });
         }
         this._deletedOcrMasks = [];
 
