@@ -207,13 +207,15 @@ npm run build:desktop
 
 ## Runtime Data
 
-Drafts, working copies, and AI settings are stored outside the install directory. Document **Save** / **Save As** write to the location you choose.
+**Save** / **Save As** write PDFs to the location you choose. Temporary working copies, crash-recovery drafts, and AI settings are stored separately:
 
-| OS | Application data |
-|----|------------------|
+| OS | Working drafts / settings |
+|----|---------------------------|
 | Windows | `%APPDATA%/PDFEdit` |
 | macOS | `~/Library/Application Support/PDFEdit` |
-| Linux | `~/.local/share/pdfedit` or `~/.config/PDFEdit` |
+| Linux | `~/.local/share/pdfedit` |
+
+On Linux, Electron’s own profile cache stays under `~/.config/PDFEdit` and is not used for document drafts.
 
 ---
 

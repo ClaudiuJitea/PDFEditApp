@@ -3,6 +3,7 @@ const path = require('path');
 const fs = require('fs');
 const { SidecarManager } = require('./sidecar');
 const { installLinuxDesktopIntegration } = require('./linux-desktop');
+const { resolveAppDataDir, migrateLegacyLinuxData } = require('./app-data');
 
 if (process.platform === 'linux') {
   // Avoid chrome-sandbox setuid requirement on common Linux dev installs.
@@ -34,6 +35,10 @@ if (!gotLock) {
 
 function getUserDataDir() {
   return app.getPath('userData');
+}
+
+function getAppDataDir() {
+  return resolveAppDataDir(app);
 }
 
 function getAppIconPath() {
@@ -113,9 +118,16 @@ async function startApp() {
     }
   }
 
+  const appDataDir = getAppDataDir();
+  try {
+    migrateLegacyLinuxData(appDataDir, getUserDataDir());
+  } catch (err) {
+    console.error('App data migration failed:', err);
+  }
+
   sidecar = new SidecarManager({
     isDev,
-    userDataDir: getUserDataDir(),
+    userDataDir: appDataDir,
     resourcesPath: process.resourcesPath,
     appPath: app.getAppPath(),
   });
@@ -161,7 +173,8 @@ app.on('before-quit', async (event) => {
 ipcMain.handle('desktop:get-app-info', () => ({
   name: app.getName(),
   version: app.getVersion(),
-  dataDir: getUserDataDir(),
+  dataDir: getAppDataDir(),
+  profileDir: getUserDataDir(),
 }));
 ipcMain.handle('desktop:quit', () => {
   app.quit();
