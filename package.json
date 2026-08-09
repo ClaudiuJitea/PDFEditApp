@@ -18,7 +18,7 @@
     "postinstall": "bash scripts/ensure-electron.sh",
     "build:sidecar": "bash build/build-sidecar.sh",
     "build:icon": "bash build/prepare-icon.sh",
-    "build:desktop": "npm run build:sidecar && npm run build:icon && electron-builder --config build/electron-builder.yml",
+    "build:desktop": "npm run build:sidecar && npm run build:icon && electron-builder --config build/electron-builder.yml --publish never",
     "build": "npm run build:sidecar && npm run build:desktop",
     "test": "npm run test:backend && npm run test:desktop",
     "test:backend": "cd backend && .venv/bin/python -m pytest ../tests/backend -q",

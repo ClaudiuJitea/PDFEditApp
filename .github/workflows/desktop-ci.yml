@@ -15,7 +15,7 @@ jobs:
           python-version: '3.11'
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
       - name: Install backend dependencies
         run: |
           python -m pip install --upgrade pip
@@ -37,7 +37,9 @@ jobs:
           python-version: '3.11'
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
+      - name: Install system dependencies
+        run: sudo apt-get update && sudo apt-get install -y tesseract-ocr openssl
       - name: Prepare native tool links
         run: bash build/fetch-native-tools.sh
       - name: Build installers
